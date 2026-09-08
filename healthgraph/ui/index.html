@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HealthGraph: FHIR-Based Healthcare Information System Explorer</title>
+  <meta name="description" content="Educational healthcare information system explorer for HL7 FHIR R4 clinical data models, reference resolution, provenance, and longitudinal records.">
+  <meta name="theme-color" content="#0C5A56">
+
+  <!-- Design System Tokens & Styles -->
+  <link rel="stylesheet" href="/static/css/tokens.css">
+  <link rel="stylesheet" href="/static/css/layout.css">
+  <link rel="stylesheet" href="/static/css/components.css">
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to main clinical content</a>
+
+  <!-- Application Header & Top Navigation -->
+  <header class="app-header" role="banner">
+    <div class="brand-container">
+      <a href="#home" class="brand-title" style="text-decoration: none;">
+        <span>HealthGraph</span>
+      </a>
+      <span class="brand-badge">FHIR R4</span>
+    </div>
+
+    <nav class="nav-container" aria-label="Primary Exploration Navigation">
+      <button class="nav-link active" data-view="home" aria-current="page">Home</button>
+      <button class="nav-link" data-view="interop">Interop Lab</button>
+      <button class="nav-link" data-view="patients">Patients</button>
+      <button class="nav-link" data-view="resources">Resources</button>
+      <button class="nav-link" data-view="relationships">Relationships</button>
+      <button class="nav-link" data-view="timeline">Timeline</button>
+      <button class="nav-link" data-view="quality">Data Quality</button>
+      <button class="nav-link" data-view="terminology">Terminology</button>
+      <button class="nav-link" data-view="api">API</button>
+      <button class="nav-link" data-view="architecture">Architecture</button>
+      <button class="nav-link" data-view="method">Method</button>
+      <button class="nav-link" data-view="import_export">Import/Export</button>
+    </nav>
+
+    <div class="header-actions">
+      <span id="header-quick-stats" style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);"></span>
+      <span class="banner-synthetic">Synthetic Data</span>
+    </div>
+  </header>
+
+  <!-- Main Viewport Container -->
+  <main class="app-main" id="main-content" role="main">
+    <section id="view-home" class="view-section active">
+      <div id="home-content"></div>
+    </section>
+
+    <section id="view-interop" class="view-section">
+      <div id="interop-content"></div>
+    </section>
+
+    <section id="view-patients" class="view-section">
+      <div id="patients-content"></div>
+    </section>
+
+    <section id="view-resources" class="view-section">
+      <div id="resources-content"></div>
+    </section>
+
+    <section id="view-relationships" class="view-section">
+      <div id="relationships-content"></div>
+    </section>
+
+    <section id="view-timeline" class="view-section">
+      <div id="timeline-content"></div>
+    </section>
+
+    <section id="view-quality" class="view-section">
+      <div id="quality-content"></div>
+    </section>
+
+    <section id="view-terminology" class="view-section">
+      <div id="terminology-content"></div>
+    </section>
+
+    <section id="view-api" class="view-section">
+      <div id="api-content"></div>
+    </section>
+
+    <section id="view-architecture" class="view-section">
+      <div id="architecture-content"></div>
+    </section>
+
+    <section id="view-method" class="view-section">
+      <div id="method-content"></div>
+    </section>
+
+    <section id="view-import_export" class="view-section">
+      <div id="import_export-content"></div>
+    </section>
+  </main>
+
+  <!-- Side Inspection Drawer -->
+  <aside class="drawer" id="resource-drawer" aria-labelledby="drawer-title" role="dialog" aria-modal="true">
+    <div class="drawer-header">
+      <h2 id="drawer-title" style="font-size: var(--type-headline); font-weight: 600;">Resource Inspection</h2>
+      <button class="btn btn-sm btn-secondary" id="drawer-close-btn" aria-label="Close resource inspection drawer">✕</button>
+    </div>
+    <div class="drawer-body" id="drawer-body">
+      <!-- Populated dynamically by app.js -->
+    </div>
+  </aside>
+  <div class="drawer-overlay" id="drawer-overlay" tabindex="-1"></div>
+
+  <!-- Global Application Footer -->
+  <footer class="app-footer" role="contentinfo">
+    <div>
+      <strong>HealthGraph</strong> : Educational FHIR R4 Information System Explorer
+    </div>
+    <div class="footer-meta">
+      <span>Synthetic Cohort Data</span>
+      <span>•</span>
+      <span>HL7® FHIR® Release 4</span>
+      <span>•</span>
+      <span>Pure Python &amp; SQLite Deterministic Core</span>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="/static/js/graph.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,648 @@
+/* ==========================================================================
+   HEALTHGRAPH: OPEN CLINICAL INFORMATICS CANVAS
+   Cool Clinical Health Palette & Emil Kowalski Design Engineering System
+   ========================================================================== */
+
+:root {
+  /* Canvas & Atmospheric Surfaces (Cool Clinical Alabaster & Surgical Slate) */
+  --canvas-bg: #F8FAFC;
+  --canvas-recessed: #F1F5F9;
+  --surface-white: #FFFFFF;
+  --surface-subtle: #E2E8F0;
+  --surface-dark: #080D14;
+  --surface-dark-subtle: #0E1626;
+
+  /* Typography & Ink (Slate-900 High-Contrast Medical Ink) */
+  --ink-primary: #0F172A;
+  --ink-secondary: #334155;
+  --ink-muted: #64748B;
+  --ink-faint: #94A3B8;
+  --ink-inverse: #F8FAFC;
+  --ink-inverse-muted: #94A3B8;
+
+  /* HealthGraph Cool Clinical Accents */
+  --spruce: #0D9488;
+  --spruce-light: #CCFBF1;
+  --spruce-hover: #0F766E;
+  --teal: #14B8A6;
+  --teal-light: #E6FFFA;
+  --mint: #10B981;
+  --mint-light: #D1FAE5;
+  --emerald: #059669;
+  --emerald-light: #D1FAE5;
+  --azure: #0284C7;
+  --azure-light: #E0F2FE;
+  --indigo: #6366F1;
+  --indigo-light: #EEF2FF;
+  --purple: #7C3AED;
+  --purple-light: #F3E8FF;
+  --amber: #D97706;
+  --amber-light: #FEF3C7;
+  --crimson: #E11D48;
+  --crimson-light: #FFE4E6;
+
+  /* Architectural Hairlines (Cool Slate Glass) */
+  --border-hairline: rgba(15, 23, 42, 0.08);
+  --border-medium: rgba(15, 23, 42, 0.14);
+  --border-strong: rgba(15, 23, 42, 0.24);
+  --border-dark: rgba(255, 255, 255, 0.10);
+
+  /* Emil Kowalski Animation Tokens */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-press: 160ms;
+  --duration-ui: 200ms;
+  --duration-modal: 240ms;
+
+  /* Typography Stacks */
+  --font-sans: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Newsreader', Georgia, serif;
+  --font-mono: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Spatial Shadows */
+  --shadow-subtle: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
+  --shadow-elevated: 0 8px 24px rgba(15, 23, 42, 0.06), 0 2px 6px rgba(15, 23, 42, 0.03);
+  --shadow-drawer: -12px 0 40px rgba(8, 13, 20, 0.22);
+  --shadow-floating: 0 12px 32px rgba(15, 23, 42, 0.08), 0 2px 8px rgba(15, 23, 42, 0.04);
+
+  /* Layout Dimensions */
+  --header-height: 48px;
+}
+
+/* Reset & Base */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  background-color: var(--canvas-bg);
+  color: var(--ink-primary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Optical Display Typography (Apple Typography WWDC Guideline) */
+h1, h2, .display-text {
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+/* Monospace Helpers */
+code, pre, .mono {
+  font-family: var(--font-mono);
+  font-variant-ligatures: normal;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.15);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 23, 42, 0.3);
+}
+
+/* Accessibility: Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Floating Controls Layer */
+.floating-panel {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-medium);
+  box-shadow: var(--shadow-floating);
+  border-radius: 8px;
+}
+
+.floating-panel-dark {
+  background: rgba(8, 13, 20, 0.92);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-dark);
+  color: var(--ink-inverse);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  border-radius: 8px;
+}
+
+/* Architectural Hairline Rules */
+.hairline-h {
+  height: 1px;
+  background: var(--border-hairline);
+  border: none;
+  width: 100%;
+}
+
+.hairline-v {
+  width: 1px;
+  background: var(--border-hairline);
+  height: 100%;
+}
+
+/* Clean Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.03em;
+  line-height: 1.3;
+}
+
+.badge-ok {
+  background: var(--emerald-light);
+  color: var(--emerald);
+  border: 1px solid rgba(5, 150, 105, 0.25);
+}
+
+.badge-warn {
+  background: var(--amber-light);
+  color: var(--amber);
+  border: 1px solid rgba(217, 119, 6, 0.25);
+}
+
+.badge-error {
+  background: var(--crimson-light);
+  color: var(--crimson);
+  border: 1px solid rgba(225, 29, 72, 0.25);
+}
+
+.badge-info {
+  background: var(--azure-light);
+  color: var(--azure);
+  border: 1px solid rgba(2, 132, 199, 0.25);
+}
+
+.badge-neutral {
+  background: rgba(15, 23, 42, 0.04);
+  color: var(--ink-secondary);
+  border: 1px solid var(--border-hairline);
+}
+
+.badge-spruce {
+  background: var(--spruce-light);
+  color: var(--spruce);
+  border: 1px solid rgba(13, 148, 136, 0.25);
+}
+
+.badge-real {
+  background: rgba(13, 148, 136, 0.08);
+  color: var(--spruce);
+  border: 1px solid rgba(13, 148, 136, 0.25);
+  font-size: 10px;
+}
+
+.badge-conceptual {
+  background: rgba(99, 102, 241, 0.08);
+  color: var(--indigo);
+  border: 1px dashed rgba(99, 102, 241, 0.3);
+  font-size: 10px;
+}
+
+/* Emil Kowalski Button Press & Interaction Discipline */
+button, [role="button"], .interactive-press {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+  transition: transform var(--duration-press) var(--ease-out), background var(--duration-ui) var(--ease-out), border-color var(--duration-ui) var(--ease-out), opacity var(--duration-ui) var(--ease-out);
+}
+
+button:active, [role="button"]:active, .interactive-press:active {
+  transform: scale(0.97);
+}
+
+button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--spruce);
+  outline-offset: 2px;
+}
+
+/* Touch-gated Hover Micro-Elevation */
+@media (hover: hover) and (pointer: fine) {
+  .hover-elevate {
+    transition: transform var(--duration-ui) var(--ease-out), box-shadow var(--duration-ui) var(--ease-out), border-color var(--duration-ui) var(--ease-out);
+  }
+  .hover-elevate:hover {
+    transform: translateY(-2px);
+  }
+}
+
+/* Open Data Table */
+.open-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.open-table th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--ink-muted);
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-medium);
+  background: transparent;
+}
+
+.open-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-hairline);
+  color: var(--ink-primary);
+  vertical-align: top;
+}
+
+.open-table tr:hover td {
+  background: rgba(13, 148, 136, 0.025);
+}
+
+/* Live Pulse Indicator */
+.live-pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10B981;
+  display: inline-block;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: pulse-ring 2.4s infinite cubic-bezier(0.455, 0.03, 0.515, 0.955);
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+/* Unique Health Animation: Live Cardiac ECG Waveform Scan */
+@keyframes ecg-scan {
+  0% {
+    stroke-dashoffset: 140;
+    opacity: 0.4;
+  }
+  50% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: -140;
+    opacity: 0.4;
+  }
+}
+
+.ecg-trace-live {
+  stroke-dasharray: 70 20;
+  animation: ecg-scan 2.2s linear infinite;
+}
+
+/* Flowing Conduit Dashes */
+@keyframes dash-flow {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.flowing-conduit {
+  stroke-dasharray: 6 6;
+  animation: dash-flow 1.2s linear infinite;
+}
+
+/* Broken Reference Fracture Animation */
+@keyframes fracture-flicker {
+  0%, 100% {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    opacity: 0.35;
+    stroke-dashoffset: 8;
+  }
+}
+
+.broken-edge {
+  animation: fracture-flicker 1.4s infinite ease-in-out;
+}
+
+/* Subtle Technical Grid Mesh */
+.canvas-grid {
+  background-image: radial-gradient(rgba(15, 23, 42, 0.07) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ==========================================================================
+   APPLE-GRADE 3D KINETIC LANDING PAGE STYLES (COOL OBSIDIAN & TEAL)
+   ========================================================================== */
+
+.apple-hero-container {
+  background: radial-gradient(circle at 50% 25%, rgba(13, 148, 136, 0.22) 0%, rgba(8, 13, 20, 0.98) 70%), #06090E;
+  color: #F8FAFC;
+  position: relative;
+  overflow: hidden;
+}
+
+.perspective-1200 {
+  perspective: 1200px;
+  perspective-origin: 50% 50%;
+  transform-style: preserve-3d;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.apple-glass-plate {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  transition: border-color var(--duration-ui) var(--ease-out), box-shadow var(--duration-ui) var(--ease-out), transform var(--duration-press) var(--ease-out);
+}
+
+.apple-glass-plate:hover {
+  border-color: rgba(20, 184, 166, 0.45);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55), 0 0 24px rgba(20, 184, 166, 0.25);
+}
+
+.apple-glass-plate:active {
+  transform: scale(0.98);
+}
+
+/* Bio-Bus Flank Ports */
+.flank-port {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  pointer-events: none;
+  z-index: 10;
+  transition: transform var(--duration-ui) var(--ease-out);
+}
+.flank-port.port-left {
+  left: -4.5px;
+}
+.flank-port.port-right {
+  right: -4.5px;
+}
+.apple-glass-plate:hover .flank-port {
+  transform: translateY(-50%) scale(1.3);
+}
+
+.gradient-heading-apple {
+  background: linear-gradient(180deg, #FFFFFF 0%, #94A3B8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-text-spruce {
+  background: linear-gradient(135deg, #2DD4BF 0%, #0D9488 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-text-amber {
+  background: linear-gradient(135deg, #FBBF24 0%, #D97706 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-text-crimson {
+  background: linear-gradient(135deg, #FB7185 0%, #E11D48 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Scrub Progress Bar */
+.apple-scrub-track {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: rgba(8, 13, 20, 0.88);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  z-index: 50;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+}
+
+.apple-chapter-pill {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  color: #94A3B8;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all var(--duration-ui) var(--ease-out);
+}
+
+.apple-chapter-pill.active {
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.14);
+  font-weight: 600;
+}
+
+.apple-chapter-pill:hover:not(.active) {
+  color: #F8FAFC;
+}
+
+.apple-chapter-pill:active {
+  transform: scale(0.95);
+}
+
+/* Right-side Vertical Scrubber */
+.apple-vertical-scrubber {
+  position: absolute;
+  right: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  z-index: 50;
+}
+
+.apple-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: all var(--duration-ui) var(--ease-out);
+  position: relative;
+}
+
+.apple-dot.active {
+  height: 24px;
+  border-radius: 4px;
+  background: #2DD4BF;
+  box-shadow: 0 0 14px rgba(45, 212, 191, 0.7);
+}
+
+.apple-dot:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.6);
+  transform: scale(1.2);
+}
+
+/* ==========================================================================
+   LENIS SMOOTH SCROLL ENGINE RULES
+   ========================================================================== */
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   HARDWARE GPU ACCELERATION & STUDIO TOKENS
+   ========================================================================== */
+.gpu-accel {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+}
+
+.studio-glow-cyan {
+  box-shadow: 0 0 24px rgba(45, 212, 191, 0.28), inset 0 0 12px rgba(45, 212, 191, 0.12);
+}
+
+.studio-glow-crimson {
+  box-shadow: 0 0 30px rgba(225, 29, 72, 0.45), inset 0 0 16px rgba(225, 29, 72, 0.2);
+}
+
+.studio-mode-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94A3B8;
+  cursor: pointer;
+  transition: all var(--duration-ui) var(--ease-out);
+}
+
+.studio-mode-pill:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+}
+
+.studio-mode-pill:active {
+  transform: scale(0.96);
+}
+
+.studio-mode-pill.active {
+  background: rgba(45, 212, 191, 0.18);
+  border-color: rgba(45, 212, 191, 0.45);
+  color: #2DD4BF;
+  font-weight: 600;
+  box-shadow: 0 0 14px rgba(45, 212, 191, 0.25);
+}
+
+.studio-control-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  color: #E2E8F0;
+  padding: 6px 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all var(--duration-press) var(--ease-out);
+}
+
+.studio-control-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
+}
+
+.studio-control-btn:active {
+  transform: scale(0.96);
+}
+
+.studio-control-btn.active {
+  background: rgba(45, 212, 191, 0.22);
+  border-color: #2DD4BF;
+  color: #2DD4BF;
+}
+
+/* Modal Surface Animation (Never scale from 0 - Emil Kowalski Rule) */
+.modal-surface-enter {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity var(--duration-modal) var(--ease-out), transform var(--duration-modal) var(--ease-out);
+}
+
+@starting-style {
+  .modal-surface-enter {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
