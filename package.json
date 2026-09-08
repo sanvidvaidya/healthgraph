@@ -1,8 +1,9 @@
 {
   "name": "healthgraph",
   "version": "1.0.0",
+  "type": "module",
   "private": true,
   "scripts": {
-    "build": "npm --prefix frontend install && npm --prefix frontend run build"
+    "build": "node build.js"
   }
 }
