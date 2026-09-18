@@ -11,14 +11,14 @@ from healthgraph.core.resolver import ReferenceResolver
 from healthgraph.core.graph import GraphEngine
 from healthgraph.core.longitudinal import LongitudinalEngine
 from healthgraph.core.quality import QualityAuditor
-from healthgraph.data.generator import generate_synthetic_bundle
-
 
 class TestCoreEngines(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.bundle = generate_synthetic_bundle()
+        bundle_path = os.path.join(os.path.dirname(__file__), "..", "healthgraph", "data", "synthetic_bundle.json")
+        with open(bundle_path, "r", encoding="utf-8") as f:
+            cls.bundle = json.load(f)
         cls.repo = FHIRRepository()
         cls.repo.load_bundle(cls.bundle)
 

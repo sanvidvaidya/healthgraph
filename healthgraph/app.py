@@ -22,8 +22,6 @@ if PARENT_DIR not in sys.path:
 from healthgraph.api.routes import HealthGraphService
 
 BUNDLE_PATH = os.path.join(BASE_DIR, "data", "synthetic_bundle.json")
-UI_DIR = os.path.join(BASE_DIR, "ui")
-STATIC_DIR = os.path.join(UI_DIR, "static")
 DIST_DIR = os.path.join(PARENT_DIR, "frontend", "dist")
 DIST_ASSETS = os.path.join(DIST_DIR, "assets")
 
@@ -31,23 +29,17 @@ service = HealthGraphService(BUNDLE_PATH)
 
 
 async def serve_index(request):
-    """Serves the single-page HealthGraph application shell (React SPA or fallback)."""
+    """Serves the single-page HealthGraph React application shell."""
     dist_index = os.path.join(DIST_DIR, "index.html")
-    if os.path.exists(dist_index) and request.query_params.get("view") != "classic":
+    if os.path.exists(dist_index):
         with open(dist_index, "r", encoding="utf-8") as f:
-            html = f.read()
-        return HTMLResponse(html)
-
-    classic_index = os.path.join(UI_DIR, "index.html")
-    with open(classic_index, "r", encoding="utf-8") as f:
-        html = f.read()
-    return HTMLResponse(html)
+            return HTMLResponse(f.read())
+    return HTMLResponse("<h1>HealthGraph API Server</h1><p>Frontend assets not found. Build frontend/dist to view SPA.</p>", status_code=200)
 
 
 routes = [
     # UI Shell & Assets
     Route("/", endpoint=serve_index),
-    Mount("/static", app=StaticFiles(directory=STATIC_DIR), name="static"),
 ]
 
 if os.path.exists(DIST_ASSETS):
