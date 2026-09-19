@@ -492,22 +492,39 @@ class HealthGraphService:
             }
         })
 
+    async def _read_capped_json(self, request: Request, max_bytes: int = 10 * 1024 * 1024):
+        """Safely reads and decodes JSON body, preventing memory exhaustion attacks."""
+        content_length = request.headers.get("content-length")
+        if content_length:
+            try:
+                if int(content_length) > max_bytes:
+                    return None, JSONResponse({"error": "Payload too large. Maximum allowed size is 10 MB."}, status_code=413)
+            except ValueError:
+                return None, JSONResponse({"error": "Invalid Content-Length header."}, status_code=400)
+
+        body_bytes = await request.body()
+        if len(body_bytes) > max_bytes:
+            return None, JSONResponse({"error": "Payload too large. Maximum allowed size is 10 MB."}, status_code=413)
+
+        try:
+            return json.loads(body_bytes.decode("utf-8")), None
+        except Exception as e:
+            return None, JSONResponse({"error": f"Invalid JSON syntax: {str(e)}"}, status_code=400)
+
     async def api_post_validate(self, request: Request) -> JSONResponse:
         """POST /api/validate - Custom FHIR JSON payload validation."""
-        try:
-            body = await request.json()
-        except Exception as e:
-            return JSONResponse({"isValid": False, "error": f"Invalid JSON syntax: {str(e)}"}, status_code=400)
+        body, err = await self._read_capped_json(request)
+        if err:
+            return err
 
         report = self.validator.validate_resource(body)
         return JSONResponse(report.to_dict())
 
     async def api_post_bundle_import(self, request: Request) -> JSONResponse:
         """POST /api/bundle/import - Ingests a new synthetic or uploaded FHIR Bundle live."""
-        try:
-            body = await request.json()
-        except Exception as e:
-            return JSONResponse({"error": f"Invalid JSON format: {str(e)}"}, status_code=400)
+        body, err = await self._read_capped_json(request)
+        if err:
+            return err
 
         # Allow single resource or Bundle
         if isinstance(body, dict) and body.get("resourceType") != "Bundle":

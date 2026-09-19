@@ -146,5 +146,15 @@ class TestAPIAndPipeline(unittest.TestCase):
         self.assertIn("identityUniqueness", dims)
 
 
+    def test_oversized_payload_protection(self):
+        """Verify POST /api/validate returns HTTP 413 on oversized payload."""
+        oversized_bytes = b"x" * (10 * 1024 * 1024 + 10)
+        req = make_mock_request("/api/validate", method="POST", body=oversized_bytes)
+        res = asyncio.run(self.service.api_post_validate(req))
+        self.assertEqual(res.status_code, 413)
+        data = json.loads(res.body.decode("utf-8"))
+        self.assertIn("Payload too large", data["error"])
+
+
 if __name__ == "__main__":
     unittest.main()

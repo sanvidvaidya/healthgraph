@@ -74,16 +74,24 @@ routes.extend([
     Route("/api/bundle/export", endpoint=service.api_get_bundle_export, methods=["GET"]),
 ])
 
+DEBUG_MODE = os.environ.get("HEALTHGRAPH_DEBUG", "false").lower() in ("true", "1")
+allowed_origins_env = os.environ.get("HEALTHGRAPH_ALLOWED_ORIGINS")
+ALLOWED_ORIGINS = (
+    [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
+    if allowed_origins_env
+    else ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:8000", "http://localhost:8000"]
+)
+
 middleware = [
     Middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=ALLOWED_ORIGINS,
         allow_methods=["GET", "POST", "OPTIONS"],
         allow_headers=["*"],
     )
 ]
 
-app = Starlette(debug=True, routes=routes, middleware=middleware)
+app = Starlette(debug=DEBUG_MODE, routes=routes, middleware=middleware)
 
 
 def run(host: str = "127.0.0.1", port: int = 8000):
