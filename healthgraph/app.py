@@ -11,6 +11,7 @@ from starlette.responses import HTMLResponse, FileResponse
 from starlette.routing import Route, Mount
 from starlette.staticfiles import StaticFiles
 from starlette.middleware import Middleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
 
 # Ensure healthgraph is on sys.path
@@ -87,7 +88,19 @@ ALLOWED_ORIGINS = (
     else ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:8000", "http://localhost:8000"]
 )
 
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Enforces defense-in-depth HTTP security headers on all responses."""
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        return response
+
+
 middleware = [
+    Middleware(SecurityHeadersMiddleware),
     Middleware(
         CORSMiddleware,
         allow_origins=ALLOWED_ORIGINS,
