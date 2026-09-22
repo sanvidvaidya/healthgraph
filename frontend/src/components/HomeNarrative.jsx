@@ -500,7 +500,9 @@ export default function HomeNarrative({ setCurrentTab, setSelectedPatientId, onS
               }}
             >
               <div style={{
-                display: 'inline-block',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
                 fontFamily: 'var(--font-mono)',
                 fontSize: '10px',
                 letterSpacing: '0.16em',
@@ -508,28 +510,83 @@ export default function HomeNarrative({ setCurrentTab, setSelectedPatientId, onS
                 color: '#2DD4BF',
                 marginBottom: '14px',
                 background: 'rgba(45, 212, 191, 0.08)',
-                padding: '4px 12px',
+                padding: '4px 14px',
                 borderRadius: '9999px',
-                border: '1px solid rgba(45, 212, 191, 0.2)'
+                border: '1px solid rgba(45, 212, 191, 0.25)'
               }}>
-                01 · WHERE IS THE INFORMATION?
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#2DD4BF', display: 'inline-block' }} />
+                <span>01 · ENTERPRISE FHIR DATA QUALITY & OBSERVABILITY</span>
               </div>
 
               <h1 style={{
                 fontFamily: 'var(--font-sans)',
-                fontSize: 'clamp(30px, 4vw, 50px)',
+                fontSize: 'clamp(28px, 3.8vw, 48px)',
                 fontWeight: 700,
                 lineHeight: 1.2,
                 letterSpacing: '-0.03em',
                 color: '#FFFFFF',
-                margin: '0 auto 20px auto',
-                maxWidth: '760px'
+                margin: '0 auto 16px auto',
+                maxWidth: '820px'
               }}>
-                Your medical history is scattered across healthcare systems.<br />
-                <span className="gradient-text-spruce" style={{ fontSize: 'clamp(18px, 2.3vw, 26px)', fontWeight: 500, display: 'block', marginTop: '10px', lineHeight: 1.3 }}>
-                  Records live separated in hospitals, diagnostic laboratories, specialist clinics, and retail pharmacies.
+                Unifying Fragmented Clinical Records into Actionable Intelligence<br />
+                <span className="gradient-text-spruce" style={{ fontSize: 'clamp(17px, 2.1vw, 24px)', fontWeight: 500, display: 'block', marginTop: '10px', lineHeight: 1.35 }}>
+                  Pre-flight referential integrity guards, USCDI v3 conformance, and automated Da Vinci prior-authorization readiness.
                 </span>
               </h1>
+
+              {/* Enterprise Compliance Strip */}
+              <div style={{
+                display: 'inline-flex',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                gap: '8px',
+                marginBottom: '18px'
+              }}>
+                <span style={{
+                  padding: '3px 10px',
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '6px',
+                  fontSize: '11px',
+                  color: '#A1A1AA',
+                  fontFamily: 'var(--font-mono)'
+                }}>
+                  CMS-0057-F Ready
+                </span>
+                <span style={{
+                  padding: '3px 10px',
+                  background: 'rgba(45, 212, 191, 0.08)',
+                  border: '1px solid rgba(45, 212, 191, 0.2)',
+                  borderRadius: '6px',
+                  fontSize: '11px',
+                  color: '#2DD4BF',
+                  fontFamily: 'var(--font-mono)'
+                }}>
+                  USCDI v3 / v4 Aligned
+                </span>
+                <span style={{
+                  padding: '3px 10px',
+                  background: 'rgba(56, 189, 248, 0.08)',
+                  border: '1px solid rgba(56, 189, 248, 0.2)',
+                  borderRadius: '6px',
+                  fontSize: '11px',
+                  color: '#38BDF8',
+                  fontFamily: 'var(--font-mono)'
+                }}>
+                  Da Vinci CRD/DTR Prior-Auth
+                </span>
+                <span style={{
+                  padding: '3px 10px',
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '6px',
+                  fontSize: '11px',
+                  color: '#A1A1AA',
+                  fontFamily: 'var(--font-mono)'
+                }}>
+                  Deterministic Pre-Flight Gate
+                </span>
+              </div>
 
               <div style={{
                 display: 'inline-flex',
@@ -539,7 +596,7 @@ export default function HomeNarrative({ setCurrentTab, setSelectedPatientId, onS
                 fontSize: '11px',
                 fontFamily: 'var(--font-mono)'
               }}>
-                <span>Scroll down to follow how fragmented records assemble</span>
+                <span>Scroll down to inspect enterprise pipeline layers</span>
                 <ChevronDown size={13} className="bounce" />
               </div>
             </div>
@@ -691,15 +748,19 @@ export default function HomeNarrative({ setCurrentTab, setSelectedPatientId, onS
                 </span>
               </h2>
               <div style={{
-                padding: '8px 12px',
+                padding: '10px 14px',
                 background: 'rgba(225, 29, 72, 0.15)',
                 border: '1px solid rgba(225, 29, 72, 0.35)',
-                borderRadius: '6px',
+                borderRadius: '8px',
                 fontFamily: 'var(--font-mono)',
                 fontSize: '11px',
-                color: '#FDA4AF'
+                color: '#FDA4AF',
+                lineHeight: 1.45
               }}>
-                MedicationRequest points to missing practitioner PRAC-UNKNOWN-99 (HTTP 404)
+                <div style={{ fontWeight: 600, color: '#FECDD3' }}>MedicationRequest points to missing practitioner PRAC-UNKNOWN-99 (HTTP 404)</div>
+                <div style={{ marginTop: '4px', fontSize: '10px', color: '#FDA4AF', opacity: 0.9 }}>
+                  ⚠ Payer Denial Impact: Violates CMS-0057-F provider attribution. Generates automated claim denial and $35+ manual appeal cost.
+                </div>
               </div>
             </div>
 

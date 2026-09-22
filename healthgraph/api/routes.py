@@ -387,7 +387,39 @@ class HealthGraphService:
             "alerts": alerts
         })
 
+    async def api_get_patient_prior_auth_readiness(self, request: Request) -> JSONResponse:
+        """GET /api/patient/{id}/prior-auth-readiness - Evaluates Da Vinci CRD/DTR prior auth."""
+        pid = request.path_params.get("id")
+        from healthgraph.core.cds import evaluate_prior_auth_readiness
+        eval_result = evaluate_prior_auth_readiness(pid, self.repo)
+        return JSONResponse(eval_result)
+
+    async def api_get_patient_hcc_gaps(self, request: Request) -> JSONResponse:
+        """GET /api/patient/{id}/hcc-gaps - Evaluates HCC Risk Adjustment & HEDIS gaps."""
+        pid = request.path_params.get("id")
+        from healthgraph.core.cds import evaluate_hcc_and_hedis_gaps
+        eval_result = evaluate_hcc_and_hedis_gaps(pid, self.repo)
+        return JSONResponse(eval_result)
+
+    async def api_get_patient_medication_rec(self, request: Request) -> JSONResponse:
+        """GET /api/patient/{id}/medication-rec - Evaluates Medication Rec and PDC adherence."""
+        pid = request.path_params.get("id")
+        from healthgraph.core.cds import evaluate_medication_reconciliation
+        eval_result = evaluate_medication_reconciliation(pid, self.repo)
+        return JSONResponse(eval_result)
+
+    async def api_get_chaos_scenarios(self, request: Request) -> JSONResponse:
+        """GET /api/chaos/scenarios - Returns catalog of real-world healthcare chaos scenarios."""
+        from healthgraph.core.chaos import get_chaos_scenarios
+        return JSONResponse(get_chaos_scenarios())
+
+    async def api_get_trials_screen(self, request: Request) -> JSONResponse:
+        """GET /api/trials/screen - Screens cohort against clinical trial protocols."""
+        from healthgraph.core.trials import screen_cohort_for_trials
+        return JSONResponse(screen_cohort_for_trials(self.repo))
+
     async def api_get_interop_pipeline(self, request: Request) -> JSONResponse:
+
         """
         GET /api/interop/pipeline - Step-by-step pipeline inspection data.
         Demonstrates: SOURCE -> BUNDLE -> INGESTION -> VALIDATION -> RESOLUTION ->

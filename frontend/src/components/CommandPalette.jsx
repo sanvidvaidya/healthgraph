@@ -14,7 +14,12 @@ import {
   ArrowRight,
   Sparkles,
   Stethoscope,
-  Heart
+  Heart,
+  FlaskConical,
+  Pill,
+  ShieldCheck,
+  TrendingUp,
+  Zap
 } from 'lucide-react';
 
 export default function CommandPalette({
@@ -98,6 +103,61 @@ export default function CommandPalette({
       icon: Activity,
       action: () => {
         setCurrentTab('dossier');
+        onClose();
+      }
+    },
+    {
+      category: 'Clinical Workspaces',
+      id: 'tool-prior-auth',
+      title: 'Da Vinci Prior-Auth & DTR Pre-Flight (CMS-0057-F)',
+      subtitle: 'Automated clinical documentation checklist & financial denial avoidance',
+      icon: ShieldCheck,
+      action: () => {
+        setCurrentTab('dossier');
+        onClose();
+      }
+    },
+    {
+      category: 'Clinical Workspaces',
+      id: 'tool-hcc-recapture',
+      title: 'HCC Risk Adjustment & HEDIS Care Gap Sentinel',
+      subtitle: 'V28 Risk Adjustment Factor (RAF) calculation, recapture surveillance, and quality gaps',
+      icon: TrendingUp,
+      action: () => {
+        setCurrentTab('dossier');
+        onClose();
+      }
+    },
+    {
+      category: 'Clinical Workspaces',
+      id: 'tool-med-rec',
+      title: 'Medication Reconciliation & PDC Adherence Tracker',
+      subtitle: 'Longitudinal Proportion of Days Covered (PDC), CMS Star Ratings, and polypharmacy checks',
+      icon: Pill,
+      action: () => {
+        setCurrentTab('dossier');
+        onClose();
+      }
+    },
+    {
+      category: 'Clinical Workspaces',
+      id: 'tool-trials-screener',
+      title: 'Clinical Trial Protocol Feasibility & Cohort Screener',
+      subtitle: 'Automated cohort screening against trial Inclusion/Exclusion (I/E) criteria',
+      icon: FlaskConical,
+      action: () => {
+        setCurrentTab('dossier');
+        onClose();
+      }
+    },
+    {
+      category: 'Clinical Workspaces',
+      id: 'tool-chaos-suite',
+      title: 'Healthcare Chaos Engineering Test Suite',
+      subtitle: 'Inject MPI mismatches, temporal inversions, dangling provenance, and unit faults',
+      icon: Zap,
+      action: () => {
+        setCurrentTab('pipeline');
         onClose();
       }
     },

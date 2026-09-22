@@ -40,14 +40,24 @@ export default function InteropLab({ onSelectResource }) {
   }, null, 2));
   const [customValidationResult, setCustomValidationResult] = useState(null);
   const [isValidating, setIsValidating] = useState(false);
+  const [chaosScenarios, setChaosScenarios] = useState(null);
+  const [activeChaosKey, setActiveChaosKey] = useState('DANGLING_PROVENANCE');
+  const [chaosValidationResult, setChaosValidationResult] = useState(null);
 
   const conduitSvgRef = useRef(null);
 
   useEffect(() => {
     async function load() {
       try {
-        const data = await api.getInteropPipeline();
+        const [data, scenarios] = await Promise.all([
+          api.getInteropPipeline(),
+          api.getChaosScenarios().catch(() => null)
+        ]);
         setPipelineData(data);
+        setChaosScenarios(scenarios);
+        if (scenarios && scenarios['DANGLING_PROVENANCE']) {
+          api.validateResource(scenarios['DANGLING_PROVENANCE'].sample).then(setChaosValidationResult).catch(() => null);
+        }
       } catch (err) {
         console.error('Failed to load interop pipeline:', err);
       } finally {
@@ -56,6 +66,22 @@ export default function InteropLab({ onSelectResource }) {
     }
     load();
   }, []);
+
+  const handleInjectChaos = async (key) => {
+    setActiveChaosKey(key);
+    const sc = chaosScenarios?.[key];
+    if (!sc) return;
+    try {
+      const res = await api.validateResource(sc.sample);
+      setChaosValidationResult(res);
+    } catch (err) {
+      setChaosValidationResult({
+        isValid: false,
+        summary: err.message,
+        findings: [{ layer: 1, severity: 'ERROR', message: err.message }]
+      });
+    }
+  };
 
   // Anime.js: Animate SVG packet traveling through the pipeline conduit when stage changes
   useEffect(() => {
@@ -771,6 +797,153 @@ export default function InteropLab({ onSelectResource }) {
           )}
         </motion.div>
       </AnimatePresence>
+
+      {/* Healthcare Chaos Engineering & Stress-Test Suite */}
+      {chaosScenarios && (
+        <div style={{
+          marginTop: '48px',
+          padding: '28px',
+          background: 'var(--surface-white)',
+          border: '1px solid var(--border-medium)',
+          borderRadius: '8px',
+          boxShadow: 'var(--shadow-card)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
+            <div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <span className="badge badge-neutral" style={{ fontSize: '10px', letterSpacing: '0.08em' }}>
+                  DEVTOOLS EXPERIMENTATION
+                </span>
+                <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--ink-muted)' }}>
+                  CHAOS ENGINEERING FOR HEALTHCARE APIS
+                </span>
+              </div>
+              <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '24px', fontWeight: 500, color: 'var(--ink-primary)', margin: 0 }}>
+                Healthcare Chaos Engineering &amp; Edge-Case Stress Suite
+              </h2>
+              <p style={{ fontSize: '13.5px', color: 'var(--ink-secondary)', margin: '4px 0 0 0', maxWidth: '780px' }}>
+                Simulate real-world dirty clinical data patterns across disparate EHR networks. Inject anomalies to verify whether your downstream ingestion pipeline crashes, flags errors, or maintains data integrity.
+              </p>
+            </div>
+          </div>
+
+          {/* Scenario Selector Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+            {Object.entries(chaosScenarios).map(([key, sc]) => {
+              const isActive = activeChaosKey === key;
+              return (
+                <div
+                  key={key}
+                  onClick={() => handleInjectChaos(key)}
+                  style={{
+                    padding: '14px 16px',
+                    borderRadius: '6px',
+                    background: isActive ? 'rgba(45, 212, 191, 0.08)' : 'var(--surface-recessed)',
+                    border: `1px solid ${isActive ? 'rgba(45, 212, 191, 0.4)' : 'var(--border-hairline)'}`,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      color: isActive ? 'var(--emerald)' : 'var(--ink-muted)'
+                    }}>
+                      {sc.id}
+                    </span>
+                    <span style={{
+                      fontSize: '10px',
+                      padding: '1px 6px',
+                      borderRadius: '3px',
+                      background: isActive ? 'var(--emerald)' : 'var(--border-medium)',
+                      color: isActive ? '#FFFFFF' : 'var(--ink-secondary)'
+                    }}>
+                      {isActive ? 'ACTIVE' : 'SELECT'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ink-primary)', marginBottom: '4px' }}>
+                    {sc.name}
+                  </div>
+                  <div style={{ fontSize: '11.5px', color: 'var(--ink-secondary)', lineHeight: 1.35 }}>
+                    {sc.description}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Active Chaos Execution & Result Output */}
+          {activeChaosKey && chaosScenarios[activeChaosKey] && (
+            <div style={{
+              padding: '20px',
+              background: 'var(--surface-recessed)',
+              border: '1px solid var(--border-medium)',
+              borderRadius: '6px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Zap size={16} color="var(--amber)" />
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', fontWeight: 700, color: 'var(--ink-primary)' }}>
+                    INSPECTION: {chaosScenarios[activeChaosKey].name}
+                  </span>
+                </div>
+                <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--rose)', fontWeight: 600 }}>
+                  DOWNSTREAM RISK: {chaosScenarios[activeChaosKey].impact}
+                </span>
+              </div>
+
+              {chaosValidationResult && (
+                <div>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    marginBottom: '12px',
+                    padding: '8px 12px',
+                    borderRadius: '4px',
+                    background: chaosValidationResult.isValid ? 'rgba(45, 212, 191, 0.1)' : 'rgba(225, 29, 72, 0.1)',
+                    border: `1px solid ${chaosValidationResult.isValid ? 'rgba(45, 212, 191, 0.3)' : 'rgba(225, 29, 72, 0.3)'}`
+                  }}>
+                    {chaosValidationResult.isValid ? <CheckCircle2 size={16} color="var(--emerald)" /> : <AlertTriangle size={16} color="var(--rose)" />}
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', fontWeight: 600, color: chaosValidationResult.isValid ? 'var(--emerald)' : 'var(--rose)' }}>
+                      VALIDATOR STATUS: {chaosValidationResult.summary}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {chaosValidationResult.findings?.map((f, i) => (
+                      <div key={i} style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', color: 'var(--ink-secondary)', padding: '4px 0' }}>
+                        • [Layer {f.layer}] <strong style={{ color: f.severity === 'ERROR' ? 'var(--rose)' : 'var(--amber)' }}>{f.severity}</strong>: {f.message}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ marginTop: '16px' }}>
+                    <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--ink-muted)', marginBottom: '6px' }}>
+                      SYNTHETIC PAYLOAD (FHIR R4):
+                    </div>
+                    <pre style={{
+                      margin: 0,
+                      padding: '12px',
+                      borderRadius: '4px',
+                      background: '#0F172A',
+                      color: '#E2E8F0',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '11px',
+                      overflowX: 'auto',
+                      maxHeight: '160px'
+                    }}>
+                      {JSON.stringify(chaosScenarios[activeChaosKey].sample, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

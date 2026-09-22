@@ -7,8 +7,8 @@ const frontendDir = isRoot ? path.resolve('frontend') : process.cwd();
 
 console.log('==> Building HealthGraph frontend (target: ' + frontendDir + ')...');
 
-execSync('npm install', { cwd: frontendDir, stdio: 'inherit' });
-execSync('npm run build', { cwd: frontendDir, stdio: 'inherit' });
+execSync('npm install', { cwd: frontendDir, stdio: 'inherit', shell: true });
+execSync('npm run build', { cwd: frontendDir, stdio: 'inherit', shell: true });
 
 const builtDist = path.join(frontendDir, 'dist');
 console.log('==> Production assets built at: ' + builtDist);
