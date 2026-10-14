@@ -891,17 +891,54 @@ export default function HomeNarrative({ setCurrentTab, setSelectedPatientId, onS
                         <p style={{ fontSize: '12.5px', color: '#94A3B8', lineHeight: 1.5, margin: '0 0 16px 0' }}>
                           Assembles disparate clinic visits, laboratory observations, diagnoses, and medication orders into an organized chronological narrative with self-drawing biomarker trajectories and real-time clinical decision support.
                         </p>
-                        <button
-                          onClick={() => {
-                            setSelectedPatientId('PAT-VANCE-01');
-                            setCurrentTab('dossier');
-                          }}
-                          className="studio-control-btn active"
-                          style={{ padding: '8px 16px', fontSize: '12px', borderRadius: '6px' }}
-                        >
-                          <span>Open Patient Dossier</span>
-                          <ArrowRight size={13} />
-                        </button>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          <button
+                            onClick={() => {
+                              setSelectedPatientId('PAT-VANCE-01');
+                              setCurrentTab('dossier');
+                            }}
+                            className="studio-control-btn active"
+                            style={{ padding: '8px 16px', fontSize: '12px', borderRadius: '6px' }}
+                          >
+                            <span>Open Patient Dossier</span>
+                            <ArrowRight size={13} />
+                          </button>
+                          <button
+                            onClick={() => setCurrentTab('ehr-sim')}
+                            className="studio-control-btn"
+                            style={{ padding: '8px 12px', fontSize: '12px', borderRadius: '6px' }}
+                          >
+                            <span>EHR Simulator</span>
+                          </button>
+                          <button
+                            onClick={() => setCurrentTab('rosetta')}
+                            className="studio-control-btn"
+                            style={{ padding: '8px 12px', fontSize: '12px', borderRadius: '6px' }}
+                          >
+                            <span>Rosetta Stone</span>
+                          </button>
+                          <button
+                            onClick={() => setCurrentTab('copilot')}
+                            className="studio-control-btn"
+                            style={{ padding: '8px 12px', fontSize: '12px', borderRadius: '6px' }}
+                          >
+                            <span>Clinical Copilot</span>
+                          </button>
+                          <button
+                            onClick={() => setCurrentTab('privacy')}
+                            className="studio-control-btn"
+                            style={{ padding: '8px 12px', fontSize: '12px', borderRadius: '6px' }}
+                          >
+                            <span>Privacy & Twins</span>
+                          </button>
+                          <button
+                            onClick={() => setCurrentTab('actuarial')}
+                            className="studio-control-btn"
+                            style={{ padding: '8px 12px', fontSize: '12px', borderRadius: '6px' }}
+                          >
+                            <span>Actuarial Sandbox</span>
+                          </button>
+                        </div>
                       </div>
 
                       <div style={{

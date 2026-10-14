@@ -23,6 +23,11 @@ from healthgraph.core.quality import QualityAuditor
 from healthgraph.core.validator import FHIRValidator
 from healthgraph.core.provenance import ProvenanceEngine, TransferReadinessAnalyzer
 from healthgraph.core.terminology import get_terminology_catalog, get_interoperability_lesson
+from healthgraph.core.cdshooks import CDSHooksEngine
+from healthgraph.core.converter import RosettaConverter
+from healthgraph.core.graphrag import GraphRAGCopilot
+from healthgraph.core.privacy import PrivacyEngine
+from healthgraph.core.actuarial import ActuarialEngine
 
 
 def create_fhir_bundle_response(resources: List[Dict[str, Any]], total: Optional[int] = None) -> JSONResponse:
@@ -60,6 +65,11 @@ class HealthGraphService:
         self.auditor = QualityAuditor(self.store, self.resolver, self.validator)
         self.provenance_engine = ProvenanceEngine(self.store)
         self.transfer_analyzer = TransferReadinessAnalyzer(self.store, self.resolver._forward_links)
+        self.cds_hooks = CDSHooksEngine(self.repo, self.store)
+        self.rosetta = RosettaConverter()
+        self.graphrag = GraphRAGCopilot(self.repo, self.store, self.graph_engine)
+        self.privacy = PrivacyEngine(self.repo)
+        self.actuarial = ActuarialEngine()
 
     def _sync_store_from_bundle(self):
         self.store.clear()
@@ -77,6 +87,9 @@ class HealthGraphService:
         self.auditor = QualityAuditor(self.store, self.resolver, self.validator)
         self.provenance_engine = ProvenanceEngine(self.store)
         self.transfer_analyzer = TransferReadinessAnalyzer(self.store, self.resolver._forward_links)
+        self.cds_hooks = CDSHooksEngine(self.repo, self.store)
+        self.graphrag = GraphRAGCopilot(self.repo, self.store, self.graph_engine)
+        self.privacy = PrivacyEngine(self.repo)
 
     # -------------------------------------------------------------------------
     # FHIR Standard Endpoints
@@ -417,6 +430,154 @@ class HealthGraphService:
         """GET /api/trials/screen - Screens cohort against clinical trial protocols."""
         from healthgraph.core.trials import screen_cohort_for_trials
         return JSONResponse(screen_cohort_for_trials(self.repo))
+
+    # -------------------------------------------------------------------------
+    # 1. CDS Hooks & SMART-on-FHIR Endpoints
+    # -------------------------------------------------------------------------
+
+    async def api_cds_discovery(self, request: Request) -> JSONResponse:
+        """GET /cds-services - HL7 CDS Hooks standard discovery manifest."""
+        return JSONResponse(self.cds_hooks.get_services_discovery())
+
+    async def api_cds_patient_view(self, request: Request) -> JSONResponse:
+        """POST /cds-services/patient-view - Evaluates 'patient-view' hook."""
+        body, _ = await self._read_capped_json(request)
+        context = body.get("context", {}) if isinstance(body, dict) else {}
+        patient_id = context.get("patientId") or request.query_params.get("patient", "PAT-VANCE-01")
+        return JSONResponse(self.cds_hooks.evaluate_patient_view(patient_id, context))
+
+    async def api_cds_order_select(self, request: Request) -> JSONResponse:
+        """POST /cds-services/order-select - Evaluates 'order-select' hook."""
+        body, _ = await self._read_capped_json(request)
+        context = body.get("context", {}) if isinstance(body, dict) else {}
+        patient_id = context.get("patientId") or "PAT-VANCE-01"
+        selections = context.get("selections", [])
+        if not selections and isinstance(body, dict):
+            selections = body.get("selections", ["empagliflozin"])
+        return JSONResponse(self.cds_hooks.evaluate_order_select(patient_id, selections))
+
+    async def api_cds_order_sign(self, request: Request) -> JSONResponse:
+        """POST /cds-services/order-sign - Evaluates 'order-sign' hook."""
+        body, _ = await self._read_capped_json(request)
+        context = body.get("context", {}) if isinstance(body, dict) else {}
+        patient_id = context.get("patientId") or "PAT-VANCE-01"
+        draft_orders = context.get("draftOrders", {}).get("entry", [])
+        return JSONResponse(self.cds_hooks.evaluate_order_sign(patient_id, draft_orders))
+
+    # -------------------------------------------------------------------------
+    # 2. Legacy-to-FHIR Rosetta Stone Endpoints
+    # -------------------------------------------------------------------------
+
+    async def api_rosetta_convert(self, request: Request) -> JSONResponse:
+        """POST /api/rosetta/convert - Converts HL7 v2 or C-CDA XML to FHIR R4 with loss audit."""
+        body, err = await self._read_capped_json(request)
+        if err:
+            return err
+        source_format = body.get("format", "hl7v2")
+        raw_text = body.get("rawText", "")
+        if not raw_text.strip():
+            return JSONResponse({"error": "No rawText provided."}, status_code=400)
+
+        if source_format == "ccda" or raw_text.strip().startswith("<"):
+            bundle, audit = self.rosetta.parse_ccda(raw_text)
+        else:
+            bundle, audit = self.rosetta.parse_hl7v2(raw_text)
+
+        return JSONResponse({
+            "status": "success",
+            "format": source_format,
+            "bundle": bundle,
+            "audit": audit
+        })
+
+    # -------------------------------------------------------------------------
+    # 3. Deterministic Graph-RAG Clinical Copilot Endpoints
+    # -------------------------------------------------------------------------
+
+    async def api_copilot_query(self, request: Request) -> JSONResponse:
+        """POST /api/copilot/query - Executes deterministic graph traversal clinical inquiry."""
+        body, err = await self._read_capped_json(request)
+        if err:
+            return err
+        patient_id = body.get("patientId", "PAT-VANCE-01")
+        query_type = body.get("queryType", "prior_auth")
+        custom_text = body.get("customText", "")
+        result = self.graphrag.query(patient_id, query_type, custom_text)
+        return JSONResponse(result)
+
+    async def api_copilot_patient(self, request: Request) -> JSONResponse:
+        """GET /api/copilot/patient/{id} - Returns default copilot traversal for patient."""
+        patient_id = request.path_params.get("id", "PAT-VANCE-01")
+        query_type = request.query_params.get("type", "prior_auth")
+        result = self.graphrag.query(patient_id, query_type)
+        return JSONResponse(result)
+
+    # -------------------------------------------------------------------------
+    # 4. HIPAA Safe Harbor De-ID & Synthetic Twin Endpoints
+    # -------------------------------------------------------------------------
+
+    async def api_privacy_deidentify(self, request: Request) -> JSONResponse:
+        """POST /api/privacy/deidentify - Applies 18-identifier Safe Harbor de-identification."""
+        body, err = await self._read_capped_json(request)
+        if err:
+            return err
+        patient_id = body.get("patientId", "PAT-VANCE-01")
+        shift_days = int(body.get("shiftDays", -42))
+        bundle, metrics = self.privacy.deidentify_patient_record(patient_id, shift_days)
+        return JSONResponse({
+            "status": "success",
+            "deidentifiedBundle": bundle,
+            "metrics": metrics
+        })
+
+    async def api_privacy_synthetic_twin(self, request: Request) -> JSONResponse:
+        """POST /api/privacy/synthetic-twin - Generates differential privacy synthetic twin."""
+        body, err = await self._read_capped_json(request)
+        if err:
+            return err
+        patient_id = body.get("patientId", "PAT-VANCE-01")
+        epsilon = float(body.get("epsilon", 1.0))
+        bundle, diff_summary = self.privacy.generate_synthetic_twin(patient_id, epsilon)
+
+        # Optionally load into running repo if requested
+        if body.get("persistToRepo", False):
+            self.repo.load_bundle(bundle)
+            self._rebuild_all_engines()
+
+        return JSONResponse({
+            "status": "success",
+            "syntheticTwinBundle": bundle,
+            "diffSummary": diff_summary
+        })
+
+    # -------------------------------------------------------------------------
+    # 5. Value-Based Care Actuarial Risk Sandbox Endpoints
+    # -------------------------------------------------------------------------
+
+    async def api_actuarial_simulate(self, request: Request) -> JSONResponse:
+        """GET/POST /api/actuarial/simulate - Runs actuarial risk contract financial model."""
+        if request.method == "POST":
+            body, _ = await self._read_capped_json(request)
+            body = body or {}
+        else:
+            body = dict(request.query_params)
+
+        contract_type = body.get("contractType", "mssp_enhanced")
+        attributed_lives = int(body.get("attributedLives", 10000))
+        benchmark_pmpm = float(body.get("benchmarkPmpm", 850.0))
+        hcc_recapture_lift = float(body.get("hccRecaptureLift", 0.08))
+        hedis_star_rating = float(body.get("hedisStarRating", 4.5))
+        ed_reduction_pct = float(body.get("edReductionPct", 0.12))
+
+        result = self.actuarial.simulate_contract(
+            contract_type=contract_type,
+            attributed_lives=attributed_lives,
+            benchmark_pmpm=benchmark_pmpm,
+            hcc_recapture_lift=hcc_recapture_lift,
+            hedis_star_rating=hedis_star_rating,
+            ed_reduction_pct=ed_reduction_pct
+        )
+        return JSONResponse(result)
 
     async def api_get_interop_pipeline(self, request: Request) -> JSONResponse:
 

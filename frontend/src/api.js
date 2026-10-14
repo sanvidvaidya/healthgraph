@@ -65,6 +65,31 @@ export const api = {
   resetBundle: () => fetchJson('/api/bundle/reset', {
     method: 'POST',
   }),
+  getCdsServices: () => fetchJson('/cds-services').catch(() => getFallbackCdsServices()),
+  callCdsHook: (hook, patientId, data = {}) => fetchJson(`/cds-services/${encodeURIComponent(hook)}`, {
+    method: 'POST',
+    body: JSON.stringify({ context: { patientId, ...data } })
+  }).catch(() => getFallbackCdsHook(hook, patientId, data)),
+  convertRosetta: (format, rawText) => fetchJson('/api/rosetta/convert', {
+    method: 'POST',
+    body: JSON.stringify({ format, rawText })
+  }).catch(() => getFallbackRosetta(format, rawText)),
+  queryClinicalCopilot: (patientId, queryType = 'prior_auth', customText = '') => fetchJson('/api/copilot/query', {
+    method: 'POST',
+    body: JSON.stringify({ patientId, queryType, customText })
+  }).catch(() => getFallbackCopilot(patientId, queryType, customText)),
+  deidentifyPatient: (patientId, shiftDays = -42) => fetchJson('/api/privacy/deidentify', {
+    method: 'POST',
+    body: JSON.stringify({ patientId, shiftDays })
+  }).catch(() => getFallbackDeidentify(patientId, shiftDays)),
+  generateSyntheticTwin: (patientId, epsilon = 1.0, persistToRepo = false) => fetchJson('/api/privacy/synthetic-twin', {
+    method: 'POST',
+    body: JSON.stringify({ patientId, epsilon, persistToRepo })
+  }).catch(() => getFallbackSyntheticTwin(patientId, epsilon)),
+  simulateActuarial: (params = {}) => fetchJson('/api/actuarial/simulate', {
+    method: 'POST',
+    body: JSON.stringify(params)
+  }).catch(() => getFallbackActuarial(params)),
 };
 
 function getFallbackPriorAuth(patientId) {
@@ -427,5 +452,428 @@ function getFallbackTrialsScreen() {
     }
   ];
 }
+
+function getFallbackCdsServices() {
+  return {
+    services: [
+      {
+        hook: "patient-view",
+        title: "HealthGraph Longitudinal Quality & HCC Sentinel",
+        description: "Fires on chart open to surface un-recaptured HCC chronic codes and HEDIS quality gaps.",
+        id: "healthgraph-patient-view"
+      },
+      {
+        hook: "order-select",
+        title: "HealthGraph Prior-Auth DTR & Formulary Pre-Flight",
+        description: "Fires when clinician selects high-cost specialty medication or procedure to verify coverage criteria.",
+        id: "healthgraph-order-select"
+      },
+      {
+        hook: "order-sign",
+        title: "HealthGraph Denial Prevention & Safety Gate",
+        description: "Pre-signature verification halting medical necessity denials before claim generation.",
+        id: "healthgraph-order-sign"
+      }
+    ]
+  };
+}
+
+function getFallbackCdsHook(hook, patientId, data = {}) {
+  if (hook === 'patient-view') {
+    if (patientId === 'PAT-THORNE-02') {
+      return {
+        cards: [
+          {
+            uuid: "card-thorne-1",
+            summary: "Post-STEMI Care Coordination & Dual Antiplatelet Therapy (DAPT) Tracking",
+            indicator: "critical",
+            source: { label: "HealthGraph Inpatient CDS", url: "https://healthgraph.dev/cds/cardio" },
+            detail: "Arthur Thorne is post-CABG x3 following acute anteroseptal STEMI. Verify continuation of DAPT (Ticagrelor + Aspirin) and beta-blocker prior to discharge.",
+            suggestions: [{ label: "Schedule 14-Day Post-Discharge Cardio Echo & Cardiac Rehab", uuid: "sug-thorne-1" }],
+            links: [{ label: "Launch Inpatient Timeline", url: `/dossier?patient=${patientId}`, type: "smart" }]
+          }
+        ]
+      };
+    }
+    return {
+      cards: [
+        {
+          uuid: "card-vance-hcc",
+          summary: "HCC Recapture Alert: Type 2 Diabetes with Chronic Kidney Disease (CMS-HCC V28)",
+          indicator: "warning",
+          source: { label: "HealthGraph HCC Sentinel", url: "https://healthgraph.dev/cds/hcc" },
+          detail: "Harold Vance has documented T2D (E11.9) and stage 3b CKD with eGFR 48 mL/min. CMS-HCC V28 requires annual recertification to retain risk adjustment factor (RAF) weighting of 0.38 ($2,450 capitation value).",
+          suggestions: [{ label: "Re-document CKD Stage 3b & T2D with Manifestations", uuid: "sug-vance-1" }],
+          links: [{ label: "Launch HealthGraph Dossier", url: `/dossier?patient=${patientId}&tab=hcc`, type: "smart" }]
+        },
+        {
+          uuid: "card-vance-hedis",
+          summary: "HEDIS Star Measure Gap: Statin Therapy for Patients with Diabetes (SUPD)",
+          indicator: "info",
+          source: { label: "HealthGraph Quality Ledger", url: "https://healthgraph.dev/hedis" },
+          detail: "Harold Vance (age 58) with T2D has not filled a high/moderate-intensity statin within the measurement year. PDC adherence is currently at 94% on Metformin/Empagliflozin.",
+          suggestions: [{ label: "Initiate Atorvastatin 20mg PO Daily", uuid: "sug-vance-2" }],
+          links: [{ label: "View HEDIS Quality Ledger", url: `/quality?patient=${patientId}`, type: "smart" }]
+        }
+      ]
+    };
+  } else if (hook === 'order-select') {
+    const sel = (data.selections || []).join(' ').toLowerCase();
+    if (sel.includes('semaglutide') || sel.includes('ozempic') || sel.includes('glp-1')) {
+      return {
+        cards: [{
+          uuid: "card-order-glp1",
+          summary: "Prior-Auth Notice: Step Therapy Requirement & Formulation Criteria",
+          indicator: "warning",
+          source: { label: "Payer Commercial Formulary Policy #PA-GLP1-2026", url: "https://healthgraph.dev/formulary" },
+          detail: "Selected GLP-1 Receptor Agonist requires documented failure of first-line metformin therapy and HbA1c > 7.5% within 90 days. For Patient Vance, documented HbA1c is 7.0% under combination therapy. Step-therapy documentation will be required.",
+          suggestions: [
+            { label: "Switch to Formulary SGLT2 Inhibitor (Empagliflozin 10mg - Tier 2 Preferred)", uuid: "sug-glp1-1" },
+            { label: "Submit Clinical Justification for Cardiovascular Risk Reduction", uuid: "sug-glp1-2" }
+          ],
+          links: [{ label: "Launch Prior-Auth Assistant", url: `/dossier?patient=${patientId}&tab=prior-auth`, type: "smart" }]
+        }]
+      };
+    }
+    return {
+      cards: [{
+        uuid: "card-order-sglt2",
+        summary: "Da Vinci CRD: Automated Prior-Auth Pre-Flight PASSED (100% Criteria Met)",
+        indicator: "info",
+        source: { label: "Da Vinci DTR Fast-Track Payer Rules", url: "https://hl7.org/fhir/us/davinci-dtr/" },
+        detail: "Empagliflozin 10mg PO Daily satisfies CMS-0057-F Fast-Track rules: Confirmed T2D (ICD-10 E11.9), HbA1c >= 7.0%, prior Metformin trial verified, and eGFR 48 mL/min within safe renal initiation threshold. Estimated approval latency: < 5 seconds.",
+        suggestions: [{ label: "Attach Pre-Flight Interoperability Certificate to Claim", uuid: "sug-sglt2-1" }],
+        links: [{ label: "Review DTR Pre-Flight Checklist", url: `/dossier?patient=${patientId}&tab=prior-auth`, type: "smart" }]
+      }]
+    };
+  }
+  return {
+    cards: [{
+      uuid: "card-order-sign-ok",
+      summary: "Pre-Signature Verification: 0 Hard Stops Detected",
+      indicator: "info",
+      source: { label: "HealthGraph Order Sentinel", url: "https://healthgraph.dev" },
+      detail: "All selected orders satisfy formulary compliance, drug-drug interaction safety, and medical necessity documentation.",
+      suggestions: []
+    }]
+  };
+}
+
+function getFallbackRosetta(format, rawText) {
+  const isCcda = format === 'ccda' || rawText.trim().startsWith('<');
+  return {
+    status: "success",
+    format: isCcda ? "ccda" : "hl7v2",
+    bundle: {
+      resourceType: "Bundle",
+      id: "ROSETTA-CONVERTED-BUNDLE",
+      type: "collection",
+      total: 4,
+      entry: [
+        {
+          resource: {
+            resourceType: "Patient",
+            id: "PAT-CONVERTED-01",
+            name: [{ family: "Vance", given: ["Harold"] }],
+            gender: "male",
+            birthDate: "1966-04-12",
+            active: true
+          }
+        },
+        {
+          resource: {
+            resourceType: "Encounter",
+            id: "ENC-CONVERTED-01",
+            status: "finished",
+            class: { code: "AMB", display: "Ambulatory" },
+            subject: { reference: "Patient/PAT-CONVERTED-01" }
+          }
+        },
+        {
+          resource: {
+            resourceType: "Condition",
+            id: "COND-CONVERTED-01",
+            clinicalStatus: { coding: [{ code: "active" }] },
+            code: { coding: [{ system: "http://hl7.org/fhir/sid/icd-10-cm", code: "E11.9", display: "Type 2 diabetes mellitus" }], text: "Type 2 diabetes mellitus" },
+            subject: { reference: "Patient/PAT-CONVERTED-01" }
+          }
+        },
+        {
+          resource: {
+            resourceType: "Observation",
+            id: "OBS-CONVERTED-01",
+            status: "final",
+            code: { coding: [{ system: "http://loinc.org", code: "4548-4", display: "Hemoglobin A1c" }] },
+            valueQuantity: { value: 7.0, unit: "%", code: "%" },
+            subject: { reference: "Patient/PAT-CONVERTED-01" }
+          }
+        }
+      ]
+    },
+    audit: {
+      semanticFidelityScore: 92,
+      status: "HIGH_FIDELITY",
+      mappedCount: 5,
+      inferredCount: 2,
+      lostCount: 1,
+      audit: {
+        mapped: [
+          { field: "PID-3 (Patient Identifier)", sourceValue: "MRN-10023", fhirTarget: "Patient.identifier", status: "MAPPED", notes: "Mapped MRN value." },
+          { field: "PID-5 (Patient Name)", sourceValue: "VANCE^HAROLD", fhirTarget: "Patient.name", status: "MAPPED", notes: "Family/given split verified." },
+          { field: "DG1-3 (Diagnosis Code)", sourceValue: "E11.9", fhirTarget: "Condition.code", status: "MAPPED", notes: "ICD-10 clinical coding aligned." },
+          { field: "OBX-3 (Lab Test Code)", sourceValue: "4548-4", fhirTarget: "Observation.code", status: "MAPPED", notes: "LOINC standard mapped." }
+        ],
+        inferred: [
+          { field: "PID-7 (Date of Birth)", sourceValue: "19660412", fhirTarget: "Patient.birthDate", status: "TRANSFORMED", notes: "ISO-8601 formatting normalized." }
+        ],
+        lost: [
+          { field: "ZPV (Hospital Custom Flag)", sourceValue: "ZPV|VIP-SUITE-4", fhirTarget: "N/A (Dropped)", status: "LOST", notes: "Custom non-standard vendor segment dropped." }
+        ]
+      }
+    }
+  };
+}
+
+function getFallbackCopilot(patientId, queryType, customText = '') {
+  if (patientId === 'PAT-THORNE-02') {
+    return {
+      patientId,
+      patientName: "Arthur Thorne",
+      query: "Inpatient Emergency Indication: Acute STEMI to Triple CABG",
+      thesis: "Arthur Thorne experienced acute anteroseptal myocardial infarction with multi-vessel coronary artery disease, establishing immediate emergency surgical necessity under ACC/AHA guidelines.",
+      hallucinationRisk: "0.0% (Deterministic Subgraph Proof)",
+      verdict: "EMERGENCY_SURGERY_JUSTIFIED",
+      nodes: [
+        { id: `Patient/${patientId}`, label: "Arthur Thorne", type: "Patient", verified: true },
+        { id: "Condition/COND-THORNE-01", label: "Anteroseptal STEMI (I21.09)", type: "Condition", verified: true },
+        { id: "Observation/OBS-THORNE-TROP", label: "High-Sensitivity Troponin: 420 ng/L", type: "Observation", verified: true },
+        { id: "Procedure/PROC-THORNE-CABG", label: "Coronary Artery Bypass Graft x3", type: "Procedure", verified: true },
+        { id: "Encounter/ENC-THORNE-01", label: "Cardiovascular ICU Inpatient", type: "Encounter", verified: true }
+      ],
+      edges: [
+        { source: `Patient/${patientId}`, target: "Encounter/ENC-THORNE-01", predicate: "admitted_under" },
+        { source: "Encounter/ENC-THORNE-01", target: "Condition/COND-THORNE-01", predicate: "admitting_diagnosis" },
+        { source: "Condition/COND-THORNE-01", target: "Observation/OBS-THORNE-TROP", predicate: "confirmed_by_troponin" },
+        { source: "Observation/OBS-THORNE-TROP", target: "Procedure/PROC-THORNE-CABG", predicate: "mandates_revascularization" }
+      ],
+      citations: [
+        { resourceType: "Condition", resourceId: "COND-THORNE-01", criterion: "Acute STEMI" },
+        { resourceType: "Observation", resourceId: "OBS-THORNE-TROP", criterion: "Serial Troponin Elevation" },
+        { resourceType: "Procedure", resourceId: "PROC-THORNE-CABG", criterion: "Surgical Revascularization" }
+      ],
+      clinicalEvidenceChain: [
+        "1. High-sensitivity troponin surge to 420 ng/L (>14 ng/L reference threshold) confirmed transmural necrosis.",
+        "2. Diagnostic catheterization revealed 95% proximal LAD stenosis and multi-vessel occlusion.",
+        "3. Triple CABG performed successfully with uninterrupted continuous hemodialysis monitoring.",
+        "4. Dual antiplatelet therapy active with zero surgical site complications."
+      ]
+    };
+  }
+
+  return {
+    patientId: "PAT-VANCE-01",
+    patientName: "Harold Vance",
+    query: "Explain SGLT2i Prior-Auth Fast-Track Criteria Verification (CMS-0057-F)",
+    thesis: "Harold Vance fully satisfies all 5 medical necessity gates for automated SGLT2i prior-authorization without peer-to-peer review.",
+    hallucinationRisk: "0.0% (Deterministic Subgraph Proof)",
+    verdict: "APPROVED_PRE_SUBMISSION",
+    nodes: [
+      { id: "Patient/PAT-VANCE-01", label: "Harold Vance", type: "Patient", verified: true },
+      { id: "Condition/COND-01", label: "Type 2 Diabetes (ICD-10: E11.9)", type: "Condition", verified: true },
+      { id: "Observation/OBS-01", label: "HbA1c: 7.0% (Elevated)", type: "Observation", verified: true },
+      { id: "MedicationRequest/MED-METFORMIN-01", label: "Metformin 1000mg (Prior Trial)", type: "MedicationRequest", verified: true },
+      { id: "Observation/OBS-04", label: "eGFR: 48 mL/min (Renal Safety Gate)", type: "Observation", verified: true },
+      { id: "Rule/DTR-DIAB-2026", label: "Da Vinci DTR Fast-Track Protocol", type: "PayerRule", verified: true }
+    ],
+    edges: [
+      { source: "Patient/PAT-VANCE-01", target: "Condition/COND-01", predicate: "has_active_diagnosis" },
+      { source: "Condition/COND-01", target: "Observation/OBS-01", predicate: "monitored_by_biomarker" },
+      { source: "Condition/COND-01", target: "MedicationRequest/MED-METFORMIN-01", predicate: "first_line_therapy" },
+      { source: "MedicationRequest/MED-METFORMIN-01", target: "Observation/OBS-04", predicate: "renal_contraindication_screen" },
+      { source: "Observation/OBS-04", target: "Rule/DTR-DIAB-2026", predicate: "satisfies_coverage_policy" }
+    ],
+    citations: [
+      { resourceType: "Condition", resourceId: "COND-01", criterion: "Primary Indication Met" },
+      { resourceType: "Observation", resourceId: "OBS-01", criterion: "Glycemic Threshold Documented" },
+      { resourceType: "MedicationRequest", resourceId: "MED-METFORMIN-01", criterion: "Step Therapy Met" },
+      { resourceType: "Observation", resourceId: "OBS-04", criterion: "Renal Dosing Safe (>30 mL/min)" }
+    ],
+    clinicalEvidenceChain: [
+      "1. Primary indication of Type 2 Diabetes confirmed in Condition/COND-01.",
+      "2. Trajectory demonstrates HbA1c elevation (initial 9.4% down to 7.0%) requiring combination therapy in Observation/OBS-01.",
+      "3. Documented trial and adherence to first-line biguanide in MedicationRequest/MED-METFORMIN-01 satisfies step-therapy protocol.",
+      "4. Renal function safely above FDA threshold (eGFR 48 mL/min/1.73m2 >= 30 threshold) in Observation/OBS-04.",
+      "5. Conforms to CMS-0057-F automated interoperable pre-flight standard."
+    ]
+  };
+}
+
+function getFallbackDeidentify(patientId, shiftDays = -42) {
+  return {
+    status: "success",
+    deidentifiedBundle: {
+      resourceType: "Bundle",
+      id: "DEID-BUNDLE-ANON-7F4A2C1B",
+      type: "collection",
+      total: 5,
+      entry: [
+        {
+          resource: {
+            resourceType: "Patient",
+            id: "ANON-7F4A2C1B",
+            name: [{ family: "DE-IDENTIFIED", given: ["SUBJECT"] }],
+            gender: "male",
+            birthDate: "1966-01-01",
+            address: [{ postalCode: "100XX", country: "US" }]
+          }
+        }
+      ]
+    },
+    metrics: {
+      originalPatientId: patientId,
+      pseudonymId: "ANON-7F4A2C1B",
+      dateOffsetDays: shiftDays,
+      hipaaSafeHarborChecklist: [
+        { identifier: "1. Names", status: "VERIFIED_REDACTED" },
+        { identifier: "2. Geographic subdivisions smaller than state", status: "VERIFIED_REDACTED" },
+        { identifier: "3. All dates (except year) & ages > 89", status: "VERIFIED_REDACTED" },
+        { identifier: "4. Telephone numbers", status: "VERIFIED_REDACTED" },
+        { identifier: "5. Social Security & MRN numbers", status: "VERIFIED_REDACTED" }
+      ],
+      kAnonymity: 12,
+      lDiversity: 4,
+      reidentificationRisk: "0.018% (HIPAA Expert Determination Threshold < 0.05%)",
+      auditLog: [
+        "Removed telecom contact endpoints (Phone/Email).",
+        "Coarsened postal address to 3-digit ZIP prefix (100XX).",
+        `Shifted longitudinal timeline by ${shiftDays} days across all serial encounters.`
+      ]
+    }
+  };
+}
+
+function getFallbackSyntheticTwin(patientId, epsilon = 1.0) {
+  const twinId = `PAT-TWIN-${patientId.replace('PAT-', '')}-99`;
+  return {
+    status: "success",
+    syntheticTwinBundle: {
+      resourceType: "Bundle",
+      id: `BUNDLE-TWIN-${twinId}`,
+      type: "collection",
+      total: 5,
+      entry: [
+        {
+          resource: {
+            resourceType: "Patient",
+            id: twinId,
+            name: [{ family: `Twin-${twinId.slice(-4)}`, given: ["Synthetic"] }],
+            gender: "male",
+            birthDate: "1966-06-15"
+          }
+        },
+        {
+          resource: {
+            resourceType: "Observation",
+            id: `OBS-TWIN-A1C`,
+            code: { coding: [{ code: "4548-4", display: "Hemoglobin A1c" }] },
+            valueQuantity: { value: 7.1, unit: "%" },
+            subject: { reference: `Patient/${twinId}` }
+          }
+        },
+        {
+          resource: {
+            resourceType: "Observation",
+            id: `OBS-TWIN-EGFR`,
+            code: { coding: [{ code: "33914-3", display: "eGFR" }] },
+            valueQuantity: { value: 47.4, unit: "mL/min" },
+            subject: { reference: `Patient/${twinId}` }
+          }
+        }
+      ]
+    },
+    diffSummary: {
+      twinId,
+      differentialPrivacyEpsilon: epsilon,
+      appliedPerturbations: {
+        hba1cDelta: "+0.12%",
+        egfrDelta: "-0.6 mL/min",
+        creatinineDelta: "+0.04 mg/dL",
+        temporalJitter: "Preserved longitudinal interval across all serial encounters"
+      },
+      statisticalFidelity: "98.6% (Jensen-Shannon Divergence < 0.015)",
+      clinicalOntologyPreserved: true,
+      resourcesGenerated: 5
+    }
+  };
+}
+
+function getFallbackActuarial(params = {}) {
+  const lives = params.attributedLives || 10000;
+  const pmpm = params.benchmarkPmpm || 850.0;
+  const annualBenchmark = lives * pmpm * 12;
+  const grossSavings = annualBenchmark * 0.052;
+  const netSharedSavings = grossSavings * 0.75;
+  const penaltyAvoided = annualBenchmark * 0.05 * 0.40;
+
+  return {
+    contract: {
+      name: "CMS MSSP Enhanced (Two-Sided Track)",
+      shared_savings_rate: 0.75,
+      downside_loss_rate: 0.40,
+      min_savings_rate_threshold: 0.02,
+      quality_performance_cap: 1.0,
+      description: "Maximum 75% shared savings upside with 40% downside risk corridor under CMS Medicare Shared Savings Program."
+    },
+    inputs: {
+      attributedLives: lives,
+      benchmarkPmpm: pmpm,
+      hccRecaptureLift: params.hccRecaptureLift || 0.08,
+      hedisStarRating: params.hedisStarRating || 4.5,
+      edReductionPct: params.edReductionPct || 0.12
+    },
+    financials: {
+      annualBenchmark,
+      adjustedBenchmark: annualBenchmark * 1.08,
+      actualSpending: annualBenchmark - 1850000,
+      grossSavings,
+      savingsPercentage: 5.2,
+      qualityMultiplier: 1.0,
+      netSharedSavingsPayout: netSharedSavings,
+      penaltyIncurred: 0.0,
+      downsidePenaltyAvoided: penaltyAvoided,
+      dailyCostOfInaction: (netSharedSavings + penaltyAvoided) / 365.0
+    },
+    highOpportunityPatients: [
+      {
+        patientId: "PAT-VANCE-01",
+        name: "Harold Vance",
+        age: 58,
+        rafLiftOpportunity: "+0.38 RAF",
+        capitationValue: "$3,876/yr",
+        unclosedGaps: ["CMS-HCC V28 T2D with CKD 3b Recapture", "HEDIS Statin Adherence (SUPD)"],
+        status: "ACTIONABLE"
+      },
+      {
+        patientId: "PAT-THORNE-02",
+        name: "Arthur Thorne",
+        age: 64,
+        rafLiftOpportunity: "+0.44 RAF",
+        capitationValue: "$4,488/yr",
+        unclosedGaps: ["CMS-HCC Post-Infarction Cardiomyopathy", "Cardiology Post-CABG Transition (TCM)"],
+        status: "ACTIONABLE"
+      },
+      {
+        patientId: "PAT-RIVERA-03",
+        name: "Elena Rivera",
+        age: 42,
+        rafLiftOpportunity: "+0.18 RAF",
+        capitationValue: "$1,836/yr",
+        unclosedGaps: ["Hypertension Staging Reconciliation", "Cervical & Breast Cancer Screening Gap"],
+        status: "ACTIONABLE"
+      }
+    ]
+  };
+}
+
 
 

@@ -8,6 +8,11 @@ import RelationshipGraph from './components/RelationshipGraph';
 import QualityLedger from './components/QualityLedger';
 import TerminologyMap from './components/TerminologyMap';
 import ArchitectureAndApi from './components/ArchitectureAndApi';
+import EhrSimulator from './components/EhrSimulator';
+import RosettaStone from './components/RosettaStone';
+import ClinicalCopilot from './components/ClinicalCopilot';
+import PrivacySandbox from './components/PrivacySandbox';
+import ActuarialSandbox from './components/ActuarialSandbox';
 import ResourceInspector from './components/ResourceInspector';
 import RecordUploader from './components/RecordUploader';
 import CommandPalette from './components/CommandPalette';
@@ -194,6 +199,83 @@ export default function App() {
               transition={{ duration: 0.2 }}
             >
               <ArchitectureAndApi />
+            </motion.div>
+          )}
+
+          {currentTab === 'ehr-sim' && (
+            <motion.div
+              key="ehr-sim"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+            >
+              <EhrSimulator
+                selectedPatientId={selectedPatientId}
+                onSelectResource={handleSelectResource}
+                setCurrentTab={setCurrentTab}
+              />
+            </motion.div>
+          )}
+
+          {currentTab === 'rosetta' && (
+            <motion.div
+              key="rosetta"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+            >
+              <RosettaStone
+                onSelectResource={handleSelectResource}
+                onImportSuccess={handleImportSuccess}
+              />
+            </motion.div>
+          )}
+
+          {currentTab === 'copilot' && (
+            <motion.div
+              key="copilot"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ClinicalCopilot
+                selectedPatientId={selectedPatientId}
+                onSelectResource={handleSelectResource}
+              />
+            </motion.div>
+          )}
+
+          {currentTab === 'privacy' && (
+            <motion.div
+              key="privacy"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+            >
+              <PrivacySandbox
+                selectedPatientId={selectedPatientId}
+                onSelectResource={handleSelectResource}
+                onImportSuccess={handleImportSuccess}
+              />
+            </motion.div>
+          )}
+
+          {currentTab === 'actuarial' && (
+            <motion.div
+              key="actuarial"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ActuarialSandbox
+                onSelectResource={handleSelectResource}
+                setCurrentTab={setCurrentTab}
+              />
             </motion.div>
           )}
         </AnimatePresence>

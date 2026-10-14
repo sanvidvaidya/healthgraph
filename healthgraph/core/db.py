@@ -160,6 +160,10 @@ class FHIRRepository:
             return json.loads(row["raw_json"])
         return None
 
+    def get_patient(self, patient_id: str) -> Optional[Dict[str, Any]]:
+        """Convenience helper to retrieve a Patient resource by ID."""
+        return self.get_resource("Patient", patient_id)
+
     def list_resources(self, resource_type: Optional[str] = None, patient_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Retrieves resources matching optional type and patient filters."""
         cursor = self.conn.cursor()

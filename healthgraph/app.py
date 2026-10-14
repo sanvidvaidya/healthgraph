@@ -78,6 +78,26 @@ routes.extend([
     Route("/api/bundle/import", endpoint=service.api_post_bundle_import, methods=["POST"]),
     Route("/api/bundle/reset", endpoint=service.api_post_bundle_reset, methods=["POST"]),
     Route("/api/bundle/export", endpoint=service.api_get_bundle_export, methods=["GET"]),
+
+    # HL7 CDS Hooks Standard Routes
+    Route("/cds-services", endpoint=service.api_cds_discovery, methods=["GET"]),
+    Route("/cds-services/patient-view", endpoint=service.api_cds_patient_view, methods=["POST"]),
+    Route("/cds-services/order-select", endpoint=service.api_cds_order_select, methods=["POST"]),
+    Route("/cds-services/order-sign", endpoint=service.api_cds_order_sign, methods=["POST"]),
+
+    # Legacy-to-FHIR Rosetta Stone Route
+    Route("/api/rosetta/convert", endpoint=service.api_rosetta_convert, methods=["POST"]),
+
+    # Deterministic Graph-RAG Clinical Copilot Routes
+    Route("/api/copilot/query", endpoint=service.api_copilot_query, methods=["POST"]),
+    Route("/api/copilot/patient/{id}", endpoint=service.api_copilot_patient, methods=["GET"]),
+
+    # HIPAA Safe Harbor De-ID & Synthetic Twin Routes
+    Route("/api/privacy/deidentify", endpoint=service.api_privacy_deidentify, methods=["POST"]),
+    Route("/api/privacy/synthetic-twin", endpoint=service.api_privacy_synthetic_twin, methods=["POST"]),
+
+    # Value-Based Care Actuarial Risk Sandbox Route
+    Route("/api/actuarial/simulate", endpoint=service.api_actuarial_simulate, methods=["GET", "POST"]),
 ])
 
 DEBUG_MODE = os.environ.get("HEALTHGRAPH_DEBUG", "false").lower() in ("true", "1")

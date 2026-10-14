@@ -10,7 +10,12 @@ import {
   AlertTriangle,
   Terminal,
   BookOpen,
-  ArrowRight
+  ArrowRight,
+  Monitor,
+  FileCode2,
+  Sparkles,
+  Lock,
+  TrendingUp
 } from 'lucide-react';
 import { api } from '../api';
 
@@ -64,6 +69,11 @@ export default function Header({
 
   const navItems = [
     { id: 'narrative', label: 'Stream', icon: Activity, desc: 'Interactive Information Flow' },
+    { id: 'ehr-sim', label: 'EHR Simulator', icon: Monitor, desc: 'Point-of-Care CDS Hooks & Pre-Flight' },
+    { id: 'rosetta', label: 'Rosetta Stone', icon: FileCode2, desc: 'HL7 v2 & C-CDA to FHIR Converter' },
+    { id: 'copilot', label: 'Clinical Copilot', icon: Sparkles, desc: 'Deterministic Graph-RAG Causal AI' },
+    { id: 'privacy', label: 'Privacy & Twins', icon: Lock, desc: 'HIPAA Safe Harbor & Differential Privacy' },
+    { id: 'actuarial', label: 'Actuarial Sandbox', icon: TrendingUp, desc: 'VBC Shared Savings & Risk Corridor' },
     { id: 'pipeline', label: 'Interop Lab', icon: Layers, desc: '9-Stage Ingestion Pipeline' },
     { id: 'dossier', label: 'Patient Dossier', icon: UserCheck, desc: 'Longitudinal Clinical Timeline' },
     { id: 'graph', label: 'Relationship Graph', icon: GitBranch, desc: 'Interactive Resource Network' },

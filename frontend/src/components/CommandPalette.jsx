@@ -19,7 +19,10 @@ import {
   Pill,
   ShieldCheck,
   TrendingUp,
-  Zap
+  Zap,
+  Monitor,
+  FileCode2,
+  Lock
 } from 'lucide-react';
 
 export default function CommandPalette({
@@ -84,6 +87,61 @@ export default function CommandPalette({
     })),
 
     // Clinical Workspaces
+    {
+      category: 'Clinical Workspaces',
+      id: 'tool-ehr-sim',
+      title: 'EHR Simulator & CDS Hooks 2.0',
+      subtitle: 'Simulate Epic / Cerner point-of-care workflow with real-time pre-flight decision cards',
+      icon: Monitor,
+      action: () => {
+        setCurrentTab('ehr-sim');
+        onClose();
+      }
+    },
+    {
+      category: 'Clinical Workspaces',
+      id: 'tool-rosetta',
+      title: 'Legacy-to-FHIR Rosetta Stone',
+      subtitle: 'Bi-directional HL7 v2 and C-CDA XML compiler with visual semantic loss audit',
+      icon: FileCode2,
+      action: () => {
+        setCurrentTab('rosetta');
+        onClose();
+      }
+    },
+    {
+      category: 'Clinical Workspaces',
+      id: 'tool-copilot',
+      title: 'Deterministic Graph-RAG Clinical Copilot',
+      subtitle: 'Zero-hallucination causal reasoning across the multi-directed FHIR knowledge graph',
+      icon: Sparkles,
+      action: () => {
+        setCurrentTab('copilot');
+        onClose();
+      }
+    },
+    {
+      category: 'Clinical Workspaces',
+      id: 'tool-privacy',
+      title: 'HIPAA Safe Harbor & Synthetic Twin Studio',
+      subtitle: '18-identifier statutory redaction, date-shifting, and differential privacy noise synthesis',
+      icon: Lock,
+      action: () => {
+        setCurrentTab('privacy');
+        onClose();
+      }
+    },
+    {
+      category: 'Clinical Workspaces',
+      id: 'tool-actuarial',
+      title: 'Value-Based Care Actuarial Risk Sandbox',
+      subtitle: 'Model MSSP/MA two-sided risk corridors, RAF lift, and shared savings payouts',
+      icon: TrendingUp,
+      action: () => {
+        setCurrentTab('actuarial');
+        onClose();
+      }
+    },
     {
       category: 'Clinical Workspaces',
       id: 'tool-pipeline',
