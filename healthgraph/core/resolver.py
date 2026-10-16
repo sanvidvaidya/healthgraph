@@ -6,31 +6,22 @@ bidirectional dependency links, identifies dangling references, and detects
 orphan clinical entities.
 """
 
+from dataclasses import dataclass
 from typing import Dict, Any, List, Set, Tuple, Optional
 from collections import defaultdict
 
 
+@dataclass(slots=True)
 class ResolvedReference:
     """Detailed resolution status for a single reference relationship."""
-    def __init__(
-        self,
-        source_type: str,
-        source_id: str,
-        path: str,
-        target_type: str,
-        target_id: str,
-        is_resolved: bool,
-        target_title: Optional[str] = None,
-        display: Optional[str] = None
-    ):
-        self.source_type = source_type
-        self.source_id = source_id
-        self.path = path
-        self.target_type = target_type
-        self.target_id = target_id
-        self.is_resolved = is_resolved
-        self.target_title = target_title
-        self.display = display
+    source_type: str
+    source_id: str
+    path: str
+    target_type: str
+    target_id: str
+    is_resolved: bool
+    target_title: Optional[str] = None
+    display: Optional[str] = None
 
     @property
     def source_key(self) -> str:

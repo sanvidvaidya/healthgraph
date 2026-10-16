@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useSpring, animated } from '@react-spring/web';
-import anime from 'animejs';
 import { 
   GitBranch, 
   Layers, 
@@ -143,18 +141,18 @@ export default function RelationshipGraph({ patientId, setPatientId, patients, o
     return { nodes: placedNodes, edges: placedEdges };
   }, [graphData]);
 
-  // Anime.js: Animate edge strokes and flowing dashes when selecting a node
+  // Native Web Animations API: Animate edge strokes and flowing dashes when selecting a node
   useEffect(() => {
     if (selectedNodeId && edgeGroupRef.current) {
       const activePaths = edgeGroupRef.current.querySelectorAll('.highlighted-edge');
-      if (activePaths.length > 0) {
-        anime({
-          targets: activePaths,
-          strokeDashoffset: [anime.setDashoffset, 0],
-          duration: 600,
-          easing: 'easeOutQuad'
-        });
-      }
+      activePaths.forEach(p => {
+        if (p.animate) {
+          p.animate([
+            { strokeDashoffset: '40px' },
+            { strokeDashoffset: '0px' }
+          ], { duration: 600, easing: 'ease-out' });
+        }
+      });
     }
   }, [selectedNodeId]);
 

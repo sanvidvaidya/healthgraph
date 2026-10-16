@@ -83,14 +83,8 @@ class PrivacyEngine:
                 if date_field in r:
                     if isinstance(r[date_field], str):
                         try:
-                            # Parse ISO string
-                            clean_str = r[date_field].replace("Z", "")
-                            if "T" in clean_str:
-                                dt = datetime.fromisoformat(clean_str) + timedelta(days=shift_days)
-                                r[date_field] = dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-                            else:
-                                dt = datetime.strptime(clean_str, "%Y-%m-%d") + timedelta(days=shift_days)
-                                r[date_field] = dt.strftime("%Y-%m-%d")
+                            dt = datetime.fromisoformat(r[date_field]) + timedelta(days=shift_days)
+                            r[date_field] = dt.strftime("%Y-%m-%dT%H:%M:%SZ") if "T" in r[date_field] else dt.strftime("%Y-%m-%d")
                         except Exception:
                             pass
 

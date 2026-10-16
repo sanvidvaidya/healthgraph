@@ -50,14 +50,10 @@ export default function CommandPalette({
     }
   }, [isOpen]);
 
-  // Global keyboard shortcut listener (Cmd+K, Ctrl+K, Escape, /)
+  // Global keyboard shortcut listener (Cmd+K, Ctrl+K, Escape)
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        if (isOpen) onClose();
-        else openPalette();
-      } else if (e.key === 'Escape' && isOpen) {
+      if (((e.metaKey || e.ctrlKey) && e.key === 'k' || e.key === 'Escape') && isOpen) {
         e.preventDefault();
         onClose();
       }
@@ -65,10 +61,6 @@ export default function CommandPalette({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
-
-  const openPalette = () => {
-    // Handled in parent
-  };
 
   // Build searchable items
   const items = [
