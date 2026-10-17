@@ -646,3 +646,173 @@ html.lenis, html.lenis body {
     transform: scale(0.95);
   }
 }
+
+/* ==========================================================================
+   MOBILE VIEWPORT ADAPTATIONS (9:16 PORTRAIT & SMARTPHONE SCREENS <= 768px)
+   Apple-grade spatial decluttering: split layout, zero collision, touch-safe
+   ========================================================================== */
+@media (max-width: 768px) {
+  /* Header clean-up for mobile */
+  .app-header {
+    padding: 0 10px !important;
+    gap: 8px !important;
+  }
+  .header-brand-wrap {
+    min-width: unset !important;
+    gap: 8px !important;
+  }
+  .header-telemetry-wrap {
+    display: none !important;
+  }
+  .header-stat-badge {
+    display: none !important;
+  }
+  .header-search-btn span,
+  .header-search-btn kbd {
+    display: none !important;
+  }
+  .header-role-control {
+    display: none !important;
+  }
+  .header-subj-control span {
+    display: none !important;
+  }
+
+  /* Floating Command Pill (Story / Workbench / Auto Reel) */
+  .narrative-command-pill {
+    top: 10px !important;
+    padding: 3px 8px !important;
+    gap: 4px !important;
+    max-width: calc(100vw - 20px) !important;
+  }
+  .narrative-telemetry-badge,
+  .narrative-pill-divider {
+    display: none !important;
+  }
+
+  /* Workbench bar in sandbox mode on mobile */
+  .narrative-workbench-bar {
+    top: 56px !important;
+    padding: 6px 12px !important;
+    gap: 8px !important;
+    max-width: calc(100vw - 20px) !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+  }
+
+  /* Chapter 1: Hero Card */
+  .narrative-hero-card {
+    top: 9% !important;
+    padding: 0 16px !important;
+    max-width: 100% !important;
+  }
+  .narrative-hero-badge {
+    font-size: 8.5px !important;
+    padding: 3px 10px !important;
+    margin-bottom: 8px !important;
+    letter-spacing: 0.08em !important;
+  }
+  .narrative-hero-title {
+    font-size: clamp(20px, 5.2vw, 26px) !important;
+    line-height: 1.22 !important;
+    margin-bottom: 10px !important;
+  }
+  .narrative-hero-subtitle {
+    font-size: clamp(12px, 3.4vw, 13.5px) !important;
+    line-height: 1.35 !important;
+    margin-top: 6px !important;
+  }
+  .narrative-compliance-strip {
+    gap: 4px !important;
+    margin-bottom: 12px !important;
+  }
+  .narrative-compliance-strip span {
+    font-size: 9px !important;
+    padding: 2px 6px !important;
+  }
+  .narrative-hero-hint {
+    font-size: 10px !important;
+  }
+
+  /* Chapters 2, 3, 4: Story Cards (Top Half Split Layout) */
+  .narrative-chapter-card {
+    top: 11% !important;
+    left: 14px !important;
+    right: 14px !important;
+    transform: none !important;
+    max-width: calc(100vw - 28px) !important;
+    background: rgba(8, 12, 18, 0.88) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 12px !important;
+    padding: 12px 14px !important;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6) !important;
+  }
+  .narrative-chapter-card h2 {
+    font-size: 17px !important;
+    line-height: 1.25 !important;
+    margin-bottom: 6px !important;
+  }
+  .narrative-chapter-card h2 span {
+    font-size: 12px !important;
+    margin-top: 4px !important;
+    line-height: 1.35 !important;
+  }
+  .narrative-anomaly-box {
+    padding: 8px 10px !important;
+    font-size: 10px !important;
+  }
+
+  /* 3D Glass Monolith Scene */
+  .narrative-3d-scene {
+    transform-origin: center center !important;
+  }
+
+  /* Chapter 5: Dossier Showcase Dock */
+  .narrative-chapter5-container {
+    padding: 0 14px !important;
+    justify-content: flex-start !important;
+    padding-top: 52px !important;
+  }
+  .narrative-chapter5-title {
+    font-size: clamp(18px, 4.6vw, 22px) !important;
+    line-height: 1.22 !important;
+    margin: 0 auto 10px auto !important;
+  }
+  .narrative-chapter5-subtitle {
+    font-size: clamp(11.5px, 3.2vw, 13px) !important;
+    line-height: 1.35 !important;
+    margin-top: 4px !important;
+  }
+  .narrative-showcase-dock {
+    max-height: calc(100vh - 170px) !important;
+    overflow-y: auto !important;
+  }
+
+  /* Bottom Scrub Track */
+  .apple-scrub-track {
+    bottom: 12px !important;
+    max-width: calc(100vw - 20px) !important;
+    padding: 5px 12px !important;
+    gap: 8px !important;
+  }
+  .narrative-track-pills,
+  .narrative-pills-divider {
+    display: none !important;
+  }
+  .narrative-track-title {
+    min-width: unset !important;
+    max-width: 140px !important;
+    font-size: 10px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* Hide Right-side Vertical Scrubber on Mobile */
+  .apple-vertical-scrubber {
+    display: none !important;
+  }
+}
+

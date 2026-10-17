@@ -83,7 +83,7 @@ export default function Header({
   ];
 
   return (
-    <header style={{
+    <header className="app-header" style={{
       position: 'sticky',
       top: 0,
       zIndex: 50,
@@ -99,7 +99,7 @@ export default function Header({
       gap: '16px'
     }}>
       {/* Brand & System Status */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: '210px' }}>
+      <div className="header-brand-wrap" style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: '210px' }}>
         <button 
           onClick={() => setCurrentTab('narrative')}
           style={{ 
@@ -137,7 +137,7 @@ export default function Header({
           </span>
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="header-telemetry-wrap" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {/* Live ECG Cardiac Waveform */}
           <svg width="34" height="14" viewBox="0 0 34 14" style={{ overflow: 'visible' }} aria-hidden="true">
             <path
@@ -196,9 +196,9 @@ export default function Header({
       </nav>
 
       {/* Right Controls: Perspective + Import + Subject + Search */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div className="header-controls-wrap" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         {/* Role Perspective Lens */}
-        <div style={{ 
+        <div className="header-role-control" style={{ 
           display: 'flex', 
           alignItems: 'center', 
           gap: '4px', 
@@ -252,7 +252,7 @@ export default function Header({
           <span>Import</span>
         </button>
         {/* Patient Quick Selector */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <div className="header-subj-control" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           <span style={{ 
             fontSize: '10px', 
             fontFamily: 'var(--font-mono)', 
@@ -288,6 +288,7 @@ export default function Header({
         {/* Clinician Command Palette Trigger */}
         <button
           onClick={onOpenCommandPalette}
+          className="header-search-btn"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -319,7 +320,7 @@ export default function Header({
         </button>
 
         {/* Telemetry Indicator */}
-        <div style={{
+        <div className="header-stat-badge" style={{
           display: 'flex',
           alignItems: 'center',
           gap: '6px',

@@ -165,7 +165,14 @@ export default function HomeNarrative({ setCurrentTab, setSelectedPatientId, onS
       quickRotY.current = gsap.quickTo(scene3DRef.current, 'rotationY', { duration: 0.4, ease: 'power2.out' });
     }
 
-    const ctx = gsap.context(() => {
+    const mm = gsap.matchMedia(scrollTrackRef);
+
+    mm.add({
+      isDesktop: "(min-width: 769px)",
+      isMobile: "(max-width: 768px)"
+    }, (context) => {
+      const { isMobile } = context.conditions;
+
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: scrollTrackRef.current,
@@ -192,40 +199,80 @@ export default function HomeNarrative({ setCurrentTab, setSelectedPatientId, onS
         }
       });
 
-      // =======================================================================
-      // CHOREOGRAPHY WITH ZERO COLLISION (SPATIAL SEPARATION)
-      // =======================================================================
+      // Spatial positioning parameters: side-by-side on desktop, vertical split on mobile
+      const sceneShiftX = isMobile ? 0 : 220;
+      const sceneY = isMobile ? 80 : 0;
+      const sceneScale = isMobile ? 0.70 : 1;
 
       // 1. Initial State: Scene starts lowered below hero text
-      tl.to(ch1Ref.current, { opacity: 0, y: -60, scale: 0.95, duration: 1.5, ease: 'power1.in' }, 0);
+      tl.to(ch1Ref.current, { opacity: 0, y: isMobile ? -35 : -60, scale: 0.95, duration: 1.5, ease: 'power1.in' }, 0);
       tl.fromTo(scene3DRef.current, 
-        { y: 140, scale: 0.9, x: 0 }, 
-        { y: 0, scale: 1, duration: 1.5, ease: 'power1.out' }, 
+        { y: isMobile ? 180 : 140, scale: isMobile ? 0.62 : 0.9, x: 0 }, 
+        { y: sceneY, scale: sceneScale, duration: 1.5, ease: 'power1.out' }, 
         0
       );
 
       // 2. Chapter 2 (1.4 -> 4.2): Deconstruction
-      tl.fromTo(ch2Ref.current, { opacity: 0, x: -50 }, { opacity: 1, x: 0, duration: 0.8, ease: 'power2.out' }, 1.4);
-      tl.to(scene3DRef.current, { x: 220, rotateX: 18, rotateY: -22, rotateZ: 1, duration: 2.0, ease: 'power2.out' }, 1.4);
+      tl.fromTo(ch2Ref.current, 
+        { opacity: 0, x: isMobile ? 0 : -50, y: isMobile ? 15 : 0 }, 
+        { opacity: 1, x: 0, y: 0, duration: 0.8, ease: 'power2.out' }, 
+        1.4
+      );
+      tl.to(scene3DRef.current, { 
+        x: sceneShiftX, 
+        y: sceneY,
+        scale: sceneScale,
+        rotateX: isMobile ? 14 : 18, 
+        rotateY: isMobile ? -14 : -22, 
+        rotateZ: 1, 
+        duration: 2.0, 
+        ease: 'power2.out' 
+      }, 1.4);
 
       // Explode the 5 sleek glass bars along Z & Y with clean vertical separation
-      tl.to(plate1Ref.current, { y: -200, z: 100, x: -15, rotateX: 2, duration: 2.2, ease: 'power1.inOut' }, 1.5);
-      tl.to(plate2Ref.current, { y: -100, z: 50, x: -30, rotateY: 2, duration: 2.2, ease: 'power1.inOut' }, 1.5);
-      tl.to(plate4Ref.current, { y: 100, z: -50, x: 30, rotateY: -2, duration: 2.2, ease: 'power1.inOut' }, 1.5);
-      tl.to(plate5Ref.current, { y: 200, z: -100, x: 15, rotateX: -2, duration: 2.2, ease: 'power1.inOut' }, 1.5);
+      tl.to(plate1Ref.current, { y: isMobile ? -115 : -200, z: isMobile ? 60 : 100, x: isMobile ? -8 : -15, rotateX: 2, duration: 2.2, ease: 'power1.inOut' }, 1.5);
+      tl.to(plate2Ref.current, { y: isMobile ? -58 : -100, z: isMobile ? 30 : 50, x: isMobile ? -15 : -30, rotateY: 2, duration: 2.2, ease: 'power1.inOut' }, 1.5);
+      tl.to(plate4Ref.current, { y: isMobile ? 58 : 100, z: isMobile ? -30 : -50, x: isMobile ? 15 : 30, rotateY: -2, duration: 2.2, ease: 'power1.inOut' }, 1.5);
+      tl.to(plate5Ref.current, { y: isMobile ? 115 : 200, z: isMobile ? -60 : -100, x: isMobile ? 8 : 15, rotateX: -2, duration: 2.2, ease: 'power1.inOut' }, 1.5);
 
-      tl.to(ch2Ref.current, { opacity: 0, x: -40, duration: 0.6, ease: 'power2.in' }, 3.6);
+      tl.to(ch2Ref.current, { opacity: 0, x: isMobile ? 0 : -40, y: isMobile ? -15 : 0, duration: 0.6, ease: 'power2.in' }, 3.6);
 
       // 3. Chapter 3 (4.0 -> 6.8): Reference Resolution
-      tl.to(scene3DRef.current, { x: -220, rotateX: 16, rotateY: -14, rotateZ: -1, duration: 2.0, ease: 'power2.inOut' }, 3.8);
-      tl.fromTo(ch3Ref.current, { opacity: 0, x: 50 }, { opacity: 1, x: 0, duration: 0.8, ease: 'power2.out' }, 4.1);
+      tl.to(scene3DRef.current, { 
+        x: isMobile ? 0 : -220, 
+        y: sceneY,
+        scale: sceneScale,
+        rotateX: isMobile ? 12 : 16, 
+        rotateY: isMobile ? -10 : -14, 
+        rotateZ: -1, 
+        duration: 2.0, 
+        ease: 'power2.inOut' 
+      }, 3.8);
+      tl.fromTo(ch3Ref.current, 
+        { opacity: 0, x: isMobile ? 0 : 50, y: isMobile ? 15 : 0 }, 
+        { opacity: 1, x: 0, y: 0, duration: 0.8, ease: 'power2.out' }, 
+        4.1
+      );
       tl.fromTo(laserConduitsRef.current, { opacity: 0 }, { opacity: 1, duration: 0.8 }, 4.2);
 
-      tl.to(ch3Ref.current, { opacity: 0, x: 40, duration: 0.6, ease: 'power2.in' }, 6.2);
+      tl.to(ch3Ref.current, { opacity: 0, x: isMobile ? 0 : 40, y: isMobile ? -15 : 0, duration: 0.6, ease: 'power2.in' }, 6.2);
 
       // 4. Chapter 4 (6.6 -> 8.6): Silent Fracture
-      tl.to(scene3DRef.current, { x: 220, rotateX: 20, rotateY: -24, rotateZ: 1, duration: 1.8, ease: 'power2.inOut' }, 6.4);
-      tl.fromTo(ch4Ref.current, { opacity: 0, x: -50 }, { opacity: 1, x: 0, duration: 0.8, ease: 'power2.out' }, 6.6);
+      tl.to(scene3DRef.current, { 
+        x: sceneShiftX, 
+        y: sceneY,
+        scale: sceneScale,
+        rotateX: isMobile ? 15 : 20, 
+        rotateY: isMobile ? -16 : -24, 
+        rotateZ: 1, 
+        duration: 1.8, 
+        ease: 'power2.inOut' 
+      }, 6.4);
+      tl.fromTo(ch4Ref.current, 
+        { opacity: 0, x: isMobile ? 0 : -50, y: isMobile ? 15 : 0 }, 
+        { opacity: 1, x: 0, y: 0, duration: 0.8, ease: 'power2.out' }, 
+        6.6
+      );
       tl.fromTo(fractureBeamRef.current, { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.5 }, 6.8);
       tl.to(plate5Ref.current, { 
         borderColor: '#EF4444', 
@@ -234,26 +281,33 @@ export default function HomeNarrative({ setCurrentTab, setSelectedPatientId, onS
         duration: 0.4 
       }, 6.8);
 
-      tl.to(ch4Ref.current, { opacity: 0, x: -40, duration: 0.6, ease: 'power2.in' }, 8.2);
+      tl.to(ch4Ref.current, { opacity: 0, x: isMobile ? 0 : -40, y: isMobile ? -15 : 0, duration: 0.6, ease: 'power2.in' }, 8.2);
 
       // 5. Chapter 5 (8.4 -> 10.0): Launchpad
-      tl.to(scene3DRef.current, { x: 0, scale: 0.55, opacity: 0.1, y: -60, duration: 1.2, ease: 'power2.inOut' }, 8.3);
+      tl.to(scene3DRef.current, { 
+        x: 0, 
+        scale: isMobile ? 0.45 : 0.55, 
+        opacity: 0.05, 
+        y: isMobile ? -30 : -60, 
+        duration: 1.2, 
+        ease: 'power2.inOut' 
+      }, 8.3);
       tl.to(laserConduitsRef.current, { opacity: 0, duration: 0.6 }, 8.3);
       tl.to(fractureBeamRef.current, { opacity: 0, duration: 0.6 }, 8.3);
-      tl.fromTo(ch5Ref.current, { opacity: 0, scale: 0.94, y: 30 }, { opacity: 1, scale: 1, y: 0, duration: 1.0, ease: 'power2.out' }, 8.5);
-
-    }, scrollTrackRef);
+      tl.fromTo(ch5Ref.current, { opacity: 0, scale: 0.94, y: 20 }, { opacity: 1, scale: 1, y: 0, duration: 1.0, ease: 'power2.out' }, 8.5);
+    });
 
     return () => {
       gsap.ticker.remove(tickerFn);
       lenis.destroy();
-      ctx.revert();
+      mm.revert();
     };
   }, [studioMode]);
 
-  // Subtle Mouse Parallax
+  // Subtle Mouse Parallax (desktop fine pointers only)
   const handleMouseMove = useCallback((e) => {
     if (studioMode === 'sandbox' || !quickRotX.current || !quickRotY.current) return;
+    if (typeof window !== 'undefined' && window.innerWidth <= 768) return;
     const nx = (e.clientX / window.innerWidth - 0.5) * 12;
     const ny = (e.clientY / window.innerHeight - 0.5) * -10;
     quickRotY.current(-18 + nx);
@@ -342,7 +396,7 @@ export default function HomeNarrative({ setCurrentTab, setSelectedPatientId, onS
         }} />
 
         {/* ULTRA-CLEAN FLOATING COMMAND PILL */}
-        <div style={{
+        <div className="narrative-command-pill" style={{
           position: 'absolute',
           top: '24px',
           display: 'flex',
@@ -374,10 +428,10 @@ export default function HomeNarrative({ setCurrentTab, setSelectedPatientId, onS
             <span>Workbench</span>
           </button>
 
-          <span style={{ color: 'rgba(255, 255, 255, 0.15)', margin: '0 2px' }}>|</span>
+          <span className="narrative-pill-divider" style={{ color: 'rgba(255, 255, 255, 0.15)', margin: '0 2px' }}>|</span>
 
           {/* Telemetry Indicator */}
-          <div style={{
+          <div className="narrative-telemetry-badge" style={{
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
@@ -410,7 +464,7 @@ export default function HomeNarrative({ setCurrentTab, setSelectedPatientId, onS
 
         {/* WORKBENCH CONTROL BAR (Appears only in Sandbox Mode) */}
         {studioMode === 'sandbox' && (
-          <div style={{
+          <div className="narrative-workbench-bar" style={{
             position: 'absolute',
             top: '72px',
             zIndex: 60,
@@ -488,7 +542,7 @@ export default function HomeNarrative({ setCurrentTab, setSelectedPatientId, onS
             {/* CHAPTER 1: CORE : Where is the information? */}
             <div 
               ref={ch1Ref}
-              className="gpu-accel"
+              className="gpu-accel narrative-hero-card"
               style={{
                 position: 'absolute',
                 top: '16%',
@@ -499,49 +553,61 @@ export default function HomeNarrative({ setCurrentTab, setSelectedPatientId, onS
                 pointerEvents: activeChapter === 0 ? 'auto' : 'none'
               }}
             >
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '10px',
-                letterSpacing: '0.16em',
-                textTransform: 'uppercase',
-                color: '#2DD4BF',
-                marginBottom: '14px',
-                background: 'rgba(45, 212, 191, 0.08)',
-                padding: '4px 14px',
-                borderRadius: '9999px',
-                border: '1px solid rgba(45, 212, 191, 0.25)'
-              }}>
+              <div 
+                className="narrative-hero-badge"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '10px',
+                  letterSpacing: '0.16em',
+                  textTransform: 'uppercase',
+                  color: '#2DD4BF',
+                  marginBottom: '14px',
+                  background: 'rgba(45, 212, 191, 0.08)',
+                  padding: '4px 14px',
+                  borderRadius: '9999px',
+                  border: '1px solid rgba(45, 212, 191, 0.25)'
+                }}
+              >
                 <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#2DD4BF', display: 'inline-block' }} />
                 <span>01 · ENTERPRISE FHIR DATA QUALITY & OBSERVABILITY</span>
               </div>
 
-              <h1 style={{
-                fontFamily: 'var(--font-sans)',
-                fontSize: 'clamp(28px, 3.8vw, 48px)',
-                fontWeight: 700,
-                lineHeight: 1.2,
-                letterSpacing: '-0.03em',
-                color: '#FFFFFF',
-                margin: '0 auto 16px auto',
-                maxWidth: '820px'
-              }}>
+              <h1 
+                className="narrative-hero-title"
+                style={{
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: 'clamp(28px, 3.8vw, 48px)',
+                  fontWeight: 700,
+                  lineHeight: 1.2,
+                  letterSpacing: '-0.03em',
+                  color: '#FFFFFF',
+                  margin: '0 auto 16px auto',
+                  maxWidth: '820px'
+                }}
+              >
                 Unifying Fragmented Clinical Records into Actionable Intelligence<br />
-                <span className="gradient-text-spruce" style={{ fontSize: 'clamp(17px, 2.1vw, 24px)', fontWeight: 500, display: 'block', marginTop: '10px', lineHeight: 1.35 }}>
+                <span 
+                  className="gradient-text-spruce narrative-hero-subtitle" 
+                  style={{ fontSize: 'clamp(17px, 2.1vw, 24px)', fontWeight: 500, display: 'block', marginTop: '10px', lineHeight: 1.35 }}
+                >
                   Pre-flight referential integrity guards, USCDI v3 conformance, and automated Da Vinci prior-authorization readiness.
                 </span>
               </h1>
 
               {/* Enterprise Compliance Strip */}
-              <div style={{
-                display: 'inline-flex',
-                flexWrap: 'wrap',
-                justifyContent: 'center',
-                gap: '8px',
-                marginBottom: '18px'
-              }}>
+              <div 
+                className="narrative-compliance-strip"
+                style={{
+                  display: 'inline-flex',
+                  flexWrap: 'wrap',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  marginBottom: '18px'
+                }}
+              >
                 <span style={{
                   padding: '3px 10px',
                   background: 'rgba(255, 255, 255, 0.04)',
@@ -588,14 +654,17 @@ export default function HomeNarrative({ setCurrentTab, setSelectedPatientId, onS
                 </span>
               </div>
 
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                color: 'rgba(255, 255, 255, 0.5)',
-                fontSize: '11px',
-                fontFamily: 'var(--font-mono)'
-              }}>
+              <div 
+                className="narrative-hero-hint"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  fontSize: '11px',
+                  fontFamily: 'var(--font-mono)'
+                }}
+              >
                 <span>Scroll down to inspect enterprise pipeline layers</span>
                 <ChevronDown size={13} className="bounce" />
               </div>
@@ -604,7 +673,7 @@ export default function HomeNarrative({ setCurrentTab, setSelectedPatientId, onS
             {/* CHAPTER 2: LAYERS : What did we actually receive? */}
             <div 
               ref={ch2Ref}
-              className="gpu-accel"
+              className="gpu-accel narrative-chapter-card narrative-chapter-card-left"
               style={{
                 position: 'absolute',
                 top: '50%',
@@ -660,7 +729,7 @@ export default function HomeNarrative({ setCurrentTab, setSelectedPatientId, onS
             {/* CHAPTER 3: LINKS : What belongs together? */}
             <div 
               ref={ch3Ref}
-              className="gpu-accel"
+              className="gpu-accel narrative-chapter-card narrative-chapter-card-right"
               style={{
                 position: 'absolute',
                 top: '50%',
@@ -713,7 +782,7 @@ export default function HomeNarrative({ setCurrentTab, setSelectedPatientId, onS
             {/* CHAPTER 4: ANOMALY : What happens when something breaks? */}
             <div 
               ref={ch4Ref}
-              className="gpu-accel"
+              className="gpu-accel narrative-chapter-card narrative-chapter-card-left"
               style={{
                 position: 'absolute',
                 top: '50%',
@@ -747,16 +816,19 @@ export default function HomeNarrative({ setCurrentTab, setSelectedPatientId, onS
                   This prescription points to a doctor who does not exist in the local registry.
                 </span>
               </h2>
-              <div style={{
-                padding: '10px 14px',
-                background: 'rgba(225, 29, 72, 0.15)',
-                border: '1px solid rgba(225, 29, 72, 0.35)',
-                borderRadius: '8px',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '11px',
-                color: '#FDA4AF',
-                lineHeight: 1.45
-              }}>
+              <div 
+                className="narrative-anomaly-box"
+                style={{
+                  padding: '10px 14px',
+                  background: 'rgba(225, 29, 72, 0.15)',
+                  border: '1px solid rgba(225, 29, 72, 0.35)',
+                  borderRadius: '8px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '11px',
+                  color: '#FDA4AF',
+                  lineHeight: 1.45
+                }}
+              >
                 <div style={{ fontWeight: 600, color: '#FECDD3' }}>MedicationRequest points to missing practitioner PRAC-UNKNOWN-99 (HTTP 404)</div>
                 <div style={{ marginTop: '4px', fontSize: '10px', color: '#FDA4AF', opacity: 0.9 }}>
                   ⚠ Payer Denial Impact: Violates CMS-0057-F provider attribution. Generates automated claim denial and $35+ manual appeal cost.
@@ -767,7 +839,7 @@ export default function HomeNarrative({ setCurrentTab, setSelectedPatientId, onS
             {/* CHAPTER 5: DOSSIER : Can we now see the patient's story? */}
             <div 
               ref={ch5Ref}
-              className="gpu-accel"
+              className="gpu-accel narrative-chapter5-container"
               style={{
                 position: 'absolute',
                 inset: 0,
@@ -797,34 +869,43 @@ export default function HomeNarrative({ setCurrentTab, setSelectedPatientId, onS
                 05 · CAN WE SEE THE FULL STORY?
               </div>
 
-              <h2 style={{
-                fontFamily: 'var(--font-sans)',
-                fontSize: 'clamp(26px, 3.4vw, 44px)',
-                fontWeight: 700,
-                letterSpacing: '-0.03em',
-                color: '#FFFFFF',
-                lineHeight: 1.2,
-                maxWidth: '760px',
-                margin: '0 auto 32px auto'
-              }}>
+              <h2 
+                className="narrative-chapter5-title"
+                style={{
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: 'clamp(26px, 3.4vw, 44px)',
+                  fontWeight: 700,
+                  letterSpacing: '-0.03em',
+                  color: '#FFFFFF',
+                  lineHeight: 1.2,
+                  maxWidth: '760px',
+                  margin: '0 auto 32px auto'
+                }}
+              >
                 Connected records form a complete clinical picture.<br />
-                <span className="gradient-text-spruce" style={{ fontSize: 'clamp(16px, 2vw, 22px)', fontWeight: 500, display: 'block', marginTop: '8px', lineHeight: 1.4 }}>
+                <span 
+                  className="gradient-text-spruce narrative-chapter5-subtitle" 
+                  style={{ fontSize: 'clamp(16px, 2vw, 22px)', fontWeight: 500, display: 'block', marginTop: '8px', lineHeight: 1.4 }}
+                >
                   Visits, diagnostic measurements, and medications assemble into a single verified patient timeline.
                 </span>
               </h2>
 
-{/* Interactive Capability Showcase Dock */}
-              <div style={{
-                maxWidth: '960px',
-                width: '100%',
-                background: 'rgba(11, 15, 23, 0.92)',
-                border: '1px solid rgba(45, 212, 191, 0.28)',
-                borderRadius: '14px',
-                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.75)',
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column'
-              }}>
+              {/* Interactive Capability Showcase Dock */}
+              <div 
+                className="narrative-showcase-dock"
+                style={{
+                  maxWidth: '960px',
+                  width: '100%',
+                  background: 'rgba(11, 15, 23, 0.92)',
+                  border: '1px solid rgba(45, 212, 191, 0.28)',
+                  borderRadius: '14px',
+                  boxShadow: '0 20px 60px rgba(0, 0, 0, 0.75)',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column'
+                }}
+              >
                 {/* Capability Selector Tabs */}
                 <div style={{
                   display: 'flex',
@@ -1202,7 +1283,7 @@ export default function HomeNarrative({ setCurrentTab, setSelectedPatientId, onS
             ==================================================================== */}
         <div 
           ref={scene3DRef}
-          className="perspective-1200 preserve-3d gpu-accel"
+          className="perspective-1200 preserve-3d gpu-accel narrative-3d-scene"
           style={{
             position: 'absolute',
             width: '440px',
@@ -1587,20 +1668,23 @@ export default function HomeNarrative({ setCurrentTab, setSelectedPatientId, onS
 
             <div style={{ color: 'rgba(255, 255, 255, 0.15)' }}>|</div>
 
-            <div style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '11px',
-              color: '#FFFFFF',
-              fontWeight: 500,
-              minWidth: '150px'
-            }}>
+            <div 
+              className="narrative-track-title"
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '11px',
+                color: '#FFFFFF',
+                fontWeight: 500,
+                minWidth: '150px'
+              }}
+            >
               {CHAPTERS[activeChapter].title}
             </div>
 
-            <div style={{ color: 'rgba(255, 255, 255, 0.15)' }}>|</div>
+            <div className="narrative-pills-divider" style={{ color: 'rgba(255, 255, 255, 0.15)' }}>|</div>
 
             {/* Compact Chapter Jump Pills */}
-            <div style={{ display: 'flex', gap: '3px' }}>
+            <div className="narrative-track-pills" style={{ display: 'flex', gap: '3px' }}>
               {CHAPTERS.map((ch, idx) => (
                 <button
                   key={ch.id}
