@@ -78,6 +78,11 @@ routes.extend([
     Route("/api/bundle/import", endpoint=service.api_post_bundle_import, methods=["POST"]),
     Route("/api/bundle/reset", endpoint=service.api_post_bundle_reset, methods=["POST"]),
     Route("/api/bundle/export", endpoint=service.api_get_bundle_export, methods=["GET"]),
+    # SMART-on-FHIR Launch & Integration
+    Route("/api/smart/presets", endpoint=service.api_get_smart_presets, methods=["GET"]),
+    Route("/api/smart/discover", endpoint=service.api_smart_discover, methods=["GET"]),
+    Route("/api/smart/exchange", endpoint=service.api_smart_exchange_token, methods=["POST"]),
+    Route("/api/smart/ingest", endpoint=service.api_smart_ingest_patient, methods=["POST"]),
 
     # HL7 CDS Hooks Standard Routes
     Route("/cds-services", endpoint=service.api_cds_discovery, methods=["GET"]),
