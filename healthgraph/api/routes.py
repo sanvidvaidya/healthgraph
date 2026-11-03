@@ -28,6 +28,7 @@ from healthgraph.core.converter import RosettaConverter
 from healthgraph.core.graphrag import GraphRAGCopilot
 from healthgraph.core.privacy import PrivacyEngine
 from healthgraph.core.actuarial import ActuarialEngine
+from healthgraph.core.smart import SmartFhirEngine
 
 
 def create_fhir_bundle_response(resources: List[Dict[str, Any]], total: Optional[int] = None) -> JSONResponse:
@@ -793,3 +794,89 @@ class HealthGraphService:
             return JSONResponse(bundle, headers={"Content-Disposition": f"attachment; filename=patient_{patient_id}_export.json"})
 
         return JSONResponse(self.bundle, headers={"Content-Disposition": "attachment; filename=healthgraph_synthetic_bundle.json"})
+
+
+    # -------------------------------------------------------------------------
+    # SMART-on-FHIR Endpoints
+    # -------------------------------------------------------------------------
+
+    async def api_get_smart_presets(self, request: Request) -> JSONResponse:
+        """GET /api/smart/presets - Returns curated sandbox FHIR servers for SMART launch."""
+        return JSONResponse(SmartFhirEngine.SANDBOX_PRESETS)
+
+    async def api_smart_discover(self, request: Request) -> JSONResponse:
+        """GET /api/smart/discover?iss=... - Discovers SMART OAuth config and generates PKCE challenge."""
+        iss = request.query_params.get("iss", "").strip()
+        if not iss:
+            return JSONResponse({"error": "Missing 'iss' query parameter"}, status_code=400)
+        try:
+            config = SmartFhirEngine.discover_smart_configuration(iss)
+            verifier, challenge = SmartFhirEngine.generate_pkce_pair()
+            return JSONResponse({
+                "iss": iss,
+                "smart_configuration": config,
+                "code_verifier": verifier,
+                "code_challenge": challenge,
+            })
+        except Exception as e:
+            return JSONResponse({"error": f"SMART discovery failed: {str(e)}"}, status_code=502)
+
+    async def api_smart_exchange_token(self, request: Request) -> JSONResponse:
+        """POST /api/smart/exchange - Exchanges authorization code for access token & patient context."""
+        try:
+            body = await request.json()
+        except Exception:
+            return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
+
+        token_endpoint = body.get("token_endpoint")
+        code = body.get("code")
+        verifier = body.get("code_verifier")
+        client_id = body.get("client_id", "healthgraph_smart_client")
+        redirect_uri = body.get("redirect_uri")
+
+        if not token_endpoint or not code or not verifier or not redirect_uri:
+            return JSONResponse({"error": "Missing required exchange parameters"}, status_code=400)
+
+        try:
+            token_res = SmartFhirEngine.exchange_token(token_endpoint, code, verifier, client_id, redirect_uri)
+            return JSONResponse(token_res)
+        except Exception as e:
+            return JSONResponse({"error": f"Token exchange failed: {str(e)}"}, status_code=502)
+
+    async def api_smart_ingest_patient(self, request: Request) -> JSONResponse:
+        """POST /api/smart/ingest - Hydrates live FHIR patient bundle and re-evaluates all deterministic engines."""
+        try:
+            body = await request.json()
+        except Exception:
+            return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
+
+        iss = body.get("iss", "").strip()
+        access_token = body.get("access_token", "")
+        patient_id = body.get("patient_id", "").strip()
+
+        if not iss or not patient_id:
+            return JSONResponse({"error": "Missing 'iss' or 'patient_id'"}, status_code=400)
+
+        try:
+            live_bundle = SmartFhirEngine.hydrate_patient_bundle(iss, access_token, patient_id)
+            if not live_bundle.get("entry"):
+                return JSONResponse({"error": f"No resources found for patient '{patient_id}'"}, status_code=404)
+
+            self.bundle = live_bundle
+            self.repo = FHIRRepository()
+            self.repo.load_bundle(live_bundle)
+            self._rebuild_all_engines()
+
+            return JSONResponse({
+                "status": "success",
+                "patient_id": patient_id,
+                "ingested_resources": len(live_bundle.get("entry", [])),
+                "summary": {
+                    "conditions": len(self.repo.list_resources("Condition", patient_id=patient_id)),
+                    "observations": len(self.repo.list_resources("Observation", patient_id=patient_id)),
+                    "medications": len(self.repo.list_resources("MedicationRequest", patient_id=patient_id)),
+                    "encounters": len(self.repo.list_resources("Encounter", patient_id=patient_id)),
+                }
+            })
+        except Exception as e:
+            return JSONResponse({"error": f"Live patient ingestion failed: {str(e)}"}, status_code=500)
