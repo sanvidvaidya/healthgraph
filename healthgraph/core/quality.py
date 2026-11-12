@@ -12,7 +12,7 @@ Evaluates data quality across measurable, transparent dimensions:
 Taxonomy: ERROR | WARNING | INFORMATION | UNKNOWN
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 from collections import defaultdict
 from healthgraph.core.resolver import ReferenceResolver
 from healthgraph.core.validator import FHIRValidator
