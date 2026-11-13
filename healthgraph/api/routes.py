@@ -29,6 +29,7 @@ from healthgraph.core.graphrag import GraphRAGCopilot
 from healthgraph.core.privacy import PrivacyEngine
 from healthgraph.core.actuarial import ActuarialEngine
 from healthgraph.core.smart import SmartFhirEngine
+from healthgraph.core.subscriptions import SubscriptionEngine
 
 
 def create_fhir_bundle_response(resources: List[Dict[str, Any]], total: Optional[int] = None) -> JSONResponse:
@@ -71,6 +72,7 @@ class HealthGraphService:
         self.graphrag = GraphRAGCopilot(self.repo, self.store, self.graph_engine)
         self.privacy = PrivacyEngine(self.repo)
         self.actuarial = ActuarialEngine()
+        self.subscriptions = SubscriptionEngine(self.repo, self.store, rebuilder_callback=self._rebuild_all_engines)
 
     def _sync_store_from_bundle(self):
         self.store.clear()
@@ -91,6 +93,8 @@ class HealthGraphService:
         self.cds_hooks = CDSHooksEngine(self.repo, self.store)
         self.graphrag = GraphRAGCopilot(self.repo, self.store, self.graph_engine)
         self.privacy = PrivacyEngine(self.repo)
+        self.subscriptions.repo = self.repo
+        self.subscriptions.store = self.store
 
     # -------------------------------------------------------------------------
     # FHIR Standard Endpoints
@@ -880,3 +884,129 @@ class HealthGraphService:
             })
         except Exception as e:
             return JSONResponse({"error": f"Live patient ingestion failed: {str(e)}"}, status_code=500)
+
+
+    # -------------------------------------------------------------------------
+    # FHIR R4 Subscription Endpoints
+    # -------------------------------------------------------------------------
+
+    async def get_fhir_subscriptions(self, request: Request) -> JSONResponse:
+        """GET /fhir/Subscription - Returns searchset bundle of registered subscriptions."""
+        status_param = request.query_params.get("status")
+        subs = self.subscriptions.list_subscriptions(status=status_param)
+        return create_fhir_bundle_response(subs, total=len(subs))
+
+    async def get_fhir_subscription_instance(self, request: Request) -> JSONResponse:
+        """GET /fhir/Subscription/{id} - Returns single Subscription resource."""
+        sub_id = request.path_params["id"]
+        sub = self.subscriptions.get_subscription(sub_id)
+        if not sub:
+            return JSONResponse(
+                {
+                    "resourceType": "OperationOutcome",
+                    "issue": [{
+                        "severity": "error",
+                        "code": "not-found",
+                        "diagnostics": f"Subscription/{sub_id} not found"
+                    }]
+                },
+                status_code=404,
+                headers={"Content-Type": "application/fhir+json"}
+            )
+        return JSONResponse(sub, headers={"Content-Type": "application/fhir+json"})
+
+    async def post_fhir_subscription(self, request: Request) -> JSONResponse:
+        """POST /fhir/Subscription - Registers a new FHIR Subscription."""
+        try:
+            body = await request.json()
+        except Exception:
+            return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
+
+        created = self.subscriptions.create_subscription(body)
+        return JSONResponse(
+            created,
+            status_code=201,
+            headers={
+                "Content-Type": "application/fhir+json",
+                "Location": f"/fhir/Subscription/{created.get('id')}"
+            }
+        )
+
+    async def put_fhir_subscription(self, request: Request) -> JSONResponse:
+        """PUT /fhir/Subscription/{id} - Updates subscription configuration or status."""
+        sub_id = request.path_params["id"]
+        try:
+            body = await request.json()
+        except Exception:
+            return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
+
+        updated = self.subscriptions.update_subscription(sub_id, body)
+        if not updated:
+            return JSONResponse({"error": f"Subscription/{sub_id} not found"}, status_code=404)
+        return JSONResponse(updated, headers={"Content-Type": "application/fhir+json"})
+
+    async def delete_fhir_subscription(self, request: Request) -> Response:
+        """DELETE /fhir/Subscription/{id} - Deletes or deactivates subscription."""
+        sub_id = request.path_params["id"]
+        success = self.subscriptions.delete_subscription(sub_id)
+        if not success:
+            return JSONResponse({"error": f"Subscription/{sub_id} not found"}, status_code=404)
+        return Response(status_code=204)
+
+    # -------------------------------------------------------------------------
+    # REST Hook Ingress, Audit, and Clinical Event Simulation
+    # -------------------------------------------------------------------------
+
+    async def api_post_subscription_notify(self, request: Request) -> JSONResponse:
+        """
+        POST /api/subscriptions/notify - Ingests EHR resource update, evaluates
+        criteria, fires deterministic CDS safety checks, and logs audit trail.
+        """
+        try:
+            body = await request.json()
+        except Exception:
+            return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
+
+        signature = request.headers.get("X-HealthGraph-Signature")
+        secret = request.query_params.get("secret")
+
+        try:
+            result = self.subscriptions.process_incoming_resource(
+                body,
+                caller_signature=signature,
+                verify_secret=secret,
+                simulate_dispatch=True
+            )
+            return JSONResponse(result)
+        except ValueError as ve:
+            return JSONResponse({"error": str(ve)}, status_code=400)
+        except Exception as e:
+            return JSONResponse({"error": f"Event processing failed: {str(e)}"}, status_code=500)
+
+    async def api_get_subscription_audit_log(self, request: Request) -> JSONResponse:
+        """GET /api/subscriptions/audit-log - Retrieves audit ledger of notifications and dispatches."""
+        limit = int(request.query_params.get("limit", 50))
+        logs = self.subscriptions.get_audit_log(limit=limit)
+        return JSONResponse({"total": len(logs), "audit_entries": logs})
+
+    async def api_post_subscription_simulate(self, request: Request) -> JSONResponse:
+        """
+        POST /api/subscriptions/simulate - Simulates point-of-care EHR update events:
+        'renal_drop', 'glycemic_spike', 'metformin_order', 'unresolved_provider_order'.
+        """
+        try:
+            body = await request.json()
+        except Exception:
+            return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
+
+        patient_id = body.get("patient_id", "PAT-VANCE-01").strip()
+        event_type = body.get("event_type", "renal_drop").strip()
+        custom_data = body.get("custom_data")
+
+        try:
+            result = self.subscriptions.simulate_clinical_event(patient_id, event_type, custom_data)
+            return JSONResponse(result)
+        except ValueError as ve:
+            return JSONResponse({"error": str(ve)}, status_code=400)
+        except Exception as e:
+            return JSONResponse({"error": f"Clinical event simulation failed: {str(e)}"}, status_code=500)

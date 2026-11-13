@@ -6,7 +6,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![FHIR R4](https://img.shields.io/badge/FHIR-Release%204-firebrick.svg)](https://hl7.org/fhir/R4/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-teal.svg)](LICENSE)
-[![Tests: Passing](https://img.shields.io/badge/tests-22%20passed-emerald.svg)](tests/)
+[![Tests: Passing](https://img.shields.io/badge/tests-51%20passed-emerald.svg)](tests/)
 
 ---
 
@@ -140,19 +140,28 @@ The Vite development server runs on `http://127.0.0.1:5173` with instant hot mod
 
 ---
 
+
+### Real-Time FHIR R4 Subscriptions & REST Hooks
+HealthGraph implements the HL7 FHIR R4 Subscription standard for real-time, event-driven clinical surveillance:
+- **Subscription Lifecycle**: Manage subscriptions (`requested`, `active`, `off`) with criteria queries (e.g. `Observation?code=33914-3,48642-3` or `MedicationRequest?status=active`).
+- **Deterministic CDS Triggers**: Real-time evaluation of point-of-care safety gates (e.g. acute renal eGFR drops triggering critical Metformin contraindications, glycemic target elevations, or unauthenticated prescriber references).
+- **Signed REST Hooks**: Dispatches event notifications signed with HMAC SHA-256 (`X-HealthGraph-Signature`).
+- **Simulation & Audit Trail**: Point-of-care event simulator (`/api/subscriptions/simulate`) and persistent event audit ledger (`/api/subscriptions/audit-log`). See [`docs/FHIR_SUBSCRIPTIONS.md`](docs/FHIR_SUBSCRIPTIONS.md) for architecture details.
+
+---
+
 ## 5. Automated Verification and Tests
 
 HealthGraph includes a comprehensive automated test suite covering schema validation, reference graph reconstruction, clinical decision support rules, quality audits, and REST API endpoints.
 
 Run all tests from the repository root:
 ```bash
-python -m unittest discover -s tests -p "test_*.py"
+PYTHONPATH=. pytest -v
 ```
 
 Expected output:
 ```text
-Ran 22 tests in 0.09s
-OK
+51 passed in 0.86s
 ```
 
 ---

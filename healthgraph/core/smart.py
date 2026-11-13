@@ -62,13 +62,13 @@ class SmartFhirEngine:
     @staticmethod
     def discover_smart_configuration(iss: str) -> Dict[str, Any]:
         """Discovers OAuth2 endpoints via .well-known/smart-configuration or CapabilityStatement."""
-        well_known_url = f"{iss.rstrip("/")}/.well-known/smart-configuration"
+        well_known_url = f"{iss.rstrip('/')}/.well-known/smart-configuration"
         try:
             req = urllib.request.Request(well_known_url, headers={"Accept": "application/json"})
             with urllib.request.urlopen(req, timeout=8) as resp:
                 return json.loads(resp.read().decode("utf-8"))
         except Exception:
-            metadata_url = f"{iss.rstrip("/")}/metadata"
+            metadata_url = f"{iss.rstrip('/')}/metadata"
             req = urllib.request.Request(metadata_url, headers={"Accept": "application/json"})
             with urllib.request.urlopen(req, timeout=8) as resp:
                 metadata = json.loads(resp.read().decode("utf-8"))
@@ -151,7 +151,7 @@ class SmartFhirEngine:
 
         bundle_entries: List[Dict[str, Any]] = []
 
-        patient_url = f"{iss.rstrip("/")}/Patient/{urllib.parse.quote(patient_id)}"
+        patient_url = f"{iss.rstrip('/')}/Patient/{urllib.parse.quote(patient_id)}"
         try:
             req = urllib.request.Request(patient_url, headers=headers)
             with urllib.request.urlopen(req, timeout=8) as resp:
@@ -169,7 +169,7 @@ class SmartFhirEngine:
 
         resource_types = ["Condition", "Observation", "MedicationRequest", "Encounter"]
         for r_type in resource_types:
-            search_url = f"{iss.rstrip("/")}/{r_type}?patient={urllib.parse.quote(patient_id)}&_count=50"
+            search_url = f"{iss.rstrip('/')}/{r_type}?patient={urllib.parse.quote(patient_id)}&_count=50"
             try:
                 req = urllib.request.Request(search_url, headers=headers)
                 with urllib.request.urlopen(req, timeout=8) as resp:

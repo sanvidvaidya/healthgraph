@@ -49,6 +49,14 @@ if os.path.exists(DIST_ASSETS):
 routes.extend([
 
     # FHIR Standard Endpoints
+        # FHIR R4 Subscription & REST Hook Endpoints
+    Route("/fhir/Subscription", endpoint=service.get_fhir_subscriptions, methods=["GET", "POST"]),
+    Route("/fhir/Subscription/{id}", endpoint=service.get_fhir_subscription_instance, methods=["GET"]),
+    Route("/fhir/Subscription/{id}", endpoint=service.put_fhir_subscription, methods=["PUT"]),
+    Route("/fhir/Subscription/{id}", endpoint=service.delete_fhir_subscription, methods=["DELETE"]),
+    Route("/api/subscriptions/notify", endpoint=service.api_post_subscription_notify, methods=["POST"]),
+    Route("/api/subscriptions/audit-log", endpoint=service.api_get_subscription_audit_log, methods=["GET"]),
+    Route("/api/subscriptions/simulate", endpoint=service.api_post_subscription_simulate, methods=["POST"]),
     Route("/fhir/metadata", endpoint=service.get_capability_statement, methods=["GET"]),
     Route("/fhir/{resource_type}", endpoint=service.get_fhir_resource_list, methods=["GET"]),
     Route("/fhir/{resource_type}/{id}", endpoint=service.get_fhir_resource_instance, methods=["GET"]),
