@@ -1,3 +1,4 @@
+from healthgraph.core.pharmacogenomics import PharmacogenomicsEngine, CPIC_RULES
 """
 HealthGraph REST & FHIR R4 API Routes.
 
@@ -73,6 +74,7 @@ class HealthGraphService:
         self.privacy = PrivacyEngine(self.repo)
         self.actuarial = ActuarialEngine()
         self.subscriptions = SubscriptionEngine(self.repo, self.store, rebuilder_callback=self._rebuild_all_engines)
+        self.pgx_engine = PharmacogenomicsEngine(self.repo)
 
     def _sync_store_from_bundle(self):
         self.store.clear()
@@ -1010,3 +1012,84 @@ class HealthGraphService:
             return JSONResponse({"error": str(ve)}, status_code=400)
         except Exception as e:
             return JSONResponse({"error": f"Clinical event simulation failed: {str(e)}"}, status_code=500)
+
+    async def api_get_pgx_guidelines(self, request: Request) -> JSONResponse:
+        """GET /api/pgx/guidelines - Return CPIC Gene-Drug Guideline Rules catalog."""
+        return JSONResponse({
+            "status": "success",
+            "standard": "CPIC (Clinical Pharmacogenetics Implementation Consortium)",
+            "rules": CPIC_RULES,
+            "supported_genes": list(CPIC_RULES.keys())
+        })
+
+    async def api_get_patient_pgx_profile(self, request: Request) -> JSONResponse:
+        """GET /api/pgx/profile/{id} - Return patient pharmacogenomic profile."""
+        patient_id = request.path_params.get("id") or request.query_params.get("patient_id")
+        if not patient_id:
+            return JSONResponse({"error": "patient_id required"}, status_code=400)
+
+        profile = self.pgx_engine.extract_patient_pgx_profile(patient_id)
+        return JSONResponse({
+            "patient_id": patient_id,
+            "profile_found": len(profile) > 0,
+            "phenotypes": [
+                {
+                    "gene": p.gene,
+                    "diplotype": p.diplotype,
+                    "phenotype": p.phenotype,
+                    "activity_score": p.activity_score,
+                    "loinc_code": p.loinc_code
+                }
+                for p in profile
+            ]
+        })
+
+    async def api_post_pgx_evaluate(self, request: Request) -> JSONResponse:
+        """POST /api/pgx/evaluate - Evaluate PGx safety alerts for patient or ad-hoc orders."""
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+
+        patient_id = body.get("patient_id") or "PAT-VANCE-01"
+        medications = body.get("medications")
+        alerts = self.pgx_engine.evaluate_pgx_safety(patient_id=patient_id, medications=medications)
+        return JSONResponse({
+            "patient_id": patient_id,
+            "alerts_count": len(alerts),
+            "alerts": [
+                {
+                    "id": a.id,
+                    "severity": a.severity,
+                    "cpic_level": a.cpic_level,
+                    "gene": a.gene,
+                    "drug_name": a.drug_name,
+                    "rxnorm_code": a.rxnorm_code,
+                    "phenotype": a.phenotype,
+                    "diplotype": a.diplotype,
+                    "clinical_risk": a.clinical_risk,
+                    "recommendation": a.recommendation,
+                    "alternative_medications": a.alternative_medications,
+                    "dosage_adjustment_percent": a.dosage_adjustment_percent,
+                    "fda_black_box_warning": a.fda_black_box_warning,
+                    "evidence_citations": a.evidence_citations
+                }
+                for a in alerts
+            ]
+        })
+
+    async def api_post_pgx_pre_order_check(self, request: Request) -> JSONResponse:
+        """POST /api/pgx/pre-order-check - Point-of-care pre-order simulation."""
+        try:
+            body = await request.json()
+        except Exception:
+            return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
+
+        patient_id = body.get("patient_id") or "PAT-VANCE-01"
+        drug_name = body.get("drug_name") or body.get("drug")
+        rxnorm_code = body.get("rxnorm_code") or body.get("rxnorm")
+        if not drug_name:
+            return JSONResponse({"error": "drug_name is required"}, status_code=400)
+
+        result = self.pgx_engine.pre_order_cds_check(patient_id=patient_id, drug_name=drug_name, rxnorm_code=rxnorm_code)
+        return JSONResponse(result)

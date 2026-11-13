@@ -190,6 +190,31 @@ def evaluate_cds_rules(patient_id: str, repository) -> List[Dict[str, Any]]:
                     ]
                 })
 
+    # -------------------------------------------------------------------------
+    # Rule 4: Pharmacogenomics (PGx) Precision Dosing Contraindications
+    # -------------------------------------------------------------------------
+    try:
+        from healthgraph.core.pharmacogenomics import PharmacogenomicsEngine
+        pgx_engine = PharmacogenomicsEngine(repository=repository)
+        pgx_alerts = pgx_engine.evaluate_pgx_safety(patient_id=patient_id, medications=medications)
+        for pa in pgx_alerts:
+            alerts.append({
+                "id": pa.id,
+                "severity": pa.severity,
+                "category": f"Pharmacogenomics (CPIC {pa.cpic_level})",
+                "title": f"PGx Safety Alert: {pa.gene} ({pa.phenotype}) + {pa.drug_name}",
+                "summary": pa.clinical_risk,
+                "recommendation": pa.recommendation,
+                "guideline": f"CPIC {pa.cpic_level} Precision Dosing Guideline",
+                "target_resources": [
+                    {"resourceType": "MedicationRequest", "id": pa.rxnorm_code or pa.drug_name, "display": f"{pa.drug_name} (RxNorm: {pa.rxnorm_code})"}
+                ],
+                "fda_black_box": pa.fda_black_box_warning,
+                "alternative_medications": pa.alternative_medications
+            })
+    except Exception:
+        pass
+
     return alerts
 
 

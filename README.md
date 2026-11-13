@@ -161,8 +161,21 @@ PYTHONPATH=. pytest -v
 
 Expected output:
 ```text
-51 passed in 0.86s
+60 passed in 0.48s
 ```
+
+---
+
+## 5. Pharmacogenomic (PGx) Variant Interpretation & CPIC Precision Dosing
+
+HealthGraph deterministically correlates patient genomic variant profiles with medication orders based on **CPIC Level A/B Guidelines** and **FDA Table of Pharmacogenomic Biomarkers**:
+- **CYP2C19 & Clopidogrel:** Detects Poor Metabolizers at high risk of acute stent thrombosis; recommends Ticagrelor or Prasugrel.
+- **CYP2D6 & Codeine:** Alerts on Ultrarapid Metabolizers at risk of fatal opioid overdose and Poor Metabolizers with analgesic failure.
+- **SLCO1B1 & Statins:** Identifies defective hepatic transporter alleles causing statin-induced myopathy and rhabdomyolysis.
+- **HLA-B*57:01 & Abacavir:** Enforces absolute contraindications to prevent fatal systemic hypersensitivity reactions.
+- **Point-of-Care CDS Pre-Order Check:** Simulates EHR `order-select` hooks via `/api/pgx/pre-order-check` to intercept contraindicated orders before clinician signature.
+
+See [`docs/PHARMACOGENOMICS_PRECISION_DOSING.md`](docs/PHARMACOGENOMICS_PRECISION_DOSING.md) for endpoint documentation and clinical citations.
 
 ---
 
