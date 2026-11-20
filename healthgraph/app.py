@@ -43,7 +43,7 @@ async def serve_robots(request):
     dist_robots = os.path.join(DIST_DIR, "robots.txt")
     if os.path.exists(dist_robots):
         return FileResponse(dist_robots, media_type="text/plain")
-    return PlainTextResponse("User-agent: *\nAllow: /\nSitemap: https://healthgraph.vercel.app/sitemap.xml\n")
+    return PlainTextResponse("User-agent: *\nAllow: /\nSitemap: https://healthgraph-8exr.vercel.app/sitemap.xml\n")
 
 
 async def serve_sitemap(request):
@@ -51,7 +51,7 @@ async def serve_sitemap(request):
     dist_sitemap = os.path.join(DIST_DIR, "sitemap.xml")
     if os.path.exists(dist_sitemap):
         return FileResponse(dist_sitemap, media_type="application/xml")
-    return Response("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\"><url><loc>https://healthgraph.vercel.app/</loc></url></urlset>", media_type="application/xml")
+    return Response("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\"><url><loc>https://healthgraph-8exr.vercel.app/</loc></url></urlset>", media_type="application/xml")
 
 
 routes = [
