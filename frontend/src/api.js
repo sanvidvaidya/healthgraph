@@ -1,3 +1,16 @@
+import {
+  FALLBACK_STATS,
+  FALLBACK_PATIENTS,
+  FALLBACK_DOSSIERS,
+  FALLBACK_ALERTS,
+  FALLBACK_TRANSFER,
+  FALLBACK_TIMELINES,
+  FALLBACK_GRAPH,
+  FALLBACK_QUALITY,
+  FALLBACK_PIPELINE,
+  FALLBACK_TERMINOLOGY
+} from './offlineData.js';
+
 /**
  * HealthGraph API Client
  * Connects the React UI to the Starlette backend and FHIR R4 endpoints.
@@ -18,6 +31,10 @@ async function fetchJson(url, options = {}) {
     if (!res.ok) {
       throw new Error(`HTTP error ${res.status}: ${res.statusText}`);
     }
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('text/html')) {
+      throw new Error(`Expected JSON but received HTML response (SPA routing fallback) for ${url}`);
+    }
     return await res.json();
   } catch (err) {
     console.error(`API request failed [${url}]:`, err);
@@ -26,17 +43,24 @@ async function fetchJson(url, options = {}) {
 }
 
 export const api = {
-  getStats: () => fetchJson('/api/stats'),
-  getPatients: () => fetchJson('/api/patients'),
-  getPatientDossier: (id) => fetchJson(`/api/patient/${encodeURIComponent(id)}/dossier`),
-  getCdsAlerts: (id) => fetchJson(`/api/patient/${encodeURIComponent(id)}/cds-alerts`),
+  getStats: () => fetchJson('/api/stats').catch(() => FALLBACK_STATS),
+  getPatients: () => fetchJson('/api/patients').catch(() => FALLBACK_PATIENTS),
+  getPatientDossier: (id) => fetchJson(`/api/patient/${encodeURIComponent(id)}/dossier`).catch(() => FALLBACK_DOSSIERS[id] || FALLBACK_DOSSIERS['PAT-VANCE-01']),
+  getCdsAlerts: (id) => fetchJson(`/api/patient/${encodeURIComponent(id)}/cds-alerts`).catch(() => FALLBACK_ALERTS[id] || []),
+  getPatientTransferReadiness: (id) => fetchJson(`/api/patient/${encodeURIComponent(id)}/transfer-readiness`).catch(() => FALLBACK_TRANSFER[id] || { status: 'COMPLETE', score: 100 }),
   getPriorAuthReadiness: (id) => fetchJson(`/api/patient/${encodeURIComponent(id)}/prior-auth-readiness`).catch(() => getFallbackPriorAuth(id)),
   getHccGaps: (id) => fetchJson(`/api/patient/${encodeURIComponent(id)}/hcc-gaps`).catch(() => getFallbackHccGaps(id)),
   getMedicationRec: (id) => fetchJson(`/api/patient/${encodeURIComponent(id)}/medication-rec`).catch(() => getFallbackMedRec(id)),
-  getPatientTransferReadiness: (id) => fetchJson(`/api/patient/${encodeURIComponent(id)}/transfer-readiness`),
-  getGraph: () => fetchJson('/api/graph'),
-  getPatientGraph: (id) => fetchJson(`/api/graph/patient/${encodeURIComponent(id)}`),
-  getPatientTimeline: (id) => fetchJson(`/api/timeline/patient/${encodeURIComponent(id)}`),
+
+  getGraph: () => fetchJson('/api/graph').catch(() => FALLBACK_GRAPH),
+  getPatientGraph: (id) => fetchJson(`/api/graph/patient/${encodeURIComponent(id)}`).catch(() => {
+    const full = FALLBACK_GRAPH;
+    const patientNodes = (full.nodes || []).filter(n => n.id === id || n.patient_id === id);
+    const nodeIds = new Set(patientNodes.map(n => n.id));
+    const edges = (full.edges || []).filter(e => nodeIds.has(e.source) || nodeIds.has(e.target));
+    return { nodes: patientNodes, edges };
+  }),
+  getPatientTimeline: (id) => fetchJson(`/api/timeline/patient/${encodeURIComponent(id)}`).catch(() => FALLBACK_TIMELINES[id] || []),
   getResources: (type = '', search = '') => {
     const params = new URLSearchParams();
     if (type) params.append('type', type);
@@ -44,11 +68,11 @@ export const api = {
     return fetchJson(`/api/resources?${params.toString()}`);
   },
   getResourceDetail: (type, id) => fetchJson(`/api/resource/${encodeURIComponent(type)}/${encodeURIComponent(id)}`),
-  getQualityAudit: () => fetchJson('/api/quality/audit'),
-  getInteropPipeline: () => fetchJson('/api/interop/pipeline'),
+  getQualityAudit: () => fetchJson('/api/quality/audit').catch(() => FALLBACK_QUALITY),
+  getInteropPipeline: () => fetchJson('/api/interop/pipeline').catch(() => FALLBACK_PIPELINE),
   getChaosScenarios: () => fetchJson('/api/chaos/scenarios').catch(() => getFallbackChaosScenarios()),
   getTrialsScreen: () => fetchJson('/api/trials/screen').catch(() => getFallbackTrialsScreen()),
-  getTerminology: () => fetchJson('/api/terminology'),
+  getTerminology: () => fetchJson('/api/terminology').catch(() => FALLBACK_TERMINOLOGY),
   search: (query) => fetchJson(`/api/search?q=${encodeURIComponent(query)}`),
   validateResource: (resource) => fetchJson('/api/validate', {
     method: 'POST',
