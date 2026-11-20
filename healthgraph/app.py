@@ -7,7 +7,7 @@ Starts the Starlette ASGI application serving the educational UI and FHIR R4 API
 import os
 import sys
 from starlette.applications import Starlette
-from starlette.responses import HTMLResponse, FileResponse
+from starlette.responses import HTMLResponse, FileResponse, PlainTextResponse, Response
 from starlette.routing import Route, Mount
 from starlette.staticfiles import StaticFiles
 from starlette.middleware import Middleware
@@ -38,9 +38,27 @@ async def serve_index(request):
     return HTMLResponse("<h1>HealthGraph API Server</h1><p>Frontend assets not found. Build frontend/dist to view SPA.</p>", status_code=200)
 
 
+async def serve_robots(request):
+    """Serves robots.txt for search engine crawlers."""
+    dist_robots = os.path.join(DIST_DIR, "robots.txt")
+    if os.path.exists(dist_robots):
+        return FileResponse(dist_robots, media_type="text/plain")
+    return PlainTextResponse("User-agent: *\nAllow: /\nSitemap: https://healthgraph.vercel.app/sitemap.xml\n")
+
+
+async def serve_sitemap(request):
+    """Serves sitemap.xml for search engine indexing."""
+    dist_sitemap = os.path.join(DIST_DIR, "sitemap.xml")
+    if os.path.exists(dist_sitemap):
+        return FileResponse(dist_sitemap, media_type="application/xml")
+    return Response("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\"><url><loc>https://healthgraph.vercel.app/</loc></url></urlset>", media_type="application/xml")
+
+
 routes = [
-    # UI Shell & Assets
+    # UI Shell & Assets & SEO Metadata
     Route("/", endpoint=serve_index),
+    Route("/robots.txt", endpoint=serve_robots, methods=["GET"]),
+    Route("/sitemap.xml", endpoint=serve_sitemap, methods=["GET"]),
 ]
 
 if os.path.exists(DIST_ASSETS):

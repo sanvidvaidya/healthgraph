@@ -15,7 +15,10 @@ import {
   FileCode2,
   Sparkles,
   Lock,
-  TrendingUp
+  TrendingUp,
+  KeyRound,
+  Radio,
+  Dna
 } from 'lucide-react';
 import { api } from '../api';
 
@@ -69,6 +72,9 @@ export default function Header({
 
   const navItems = [
     { id: 'narrative', label: 'Stream', icon: Activity, desc: 'Interactive Information Flow' },
+    { id: 'smart', label: 'SMART on FHIR', icon: KeyRound, desc: 'OAuth 2.0 PKCE Discovery & EHR Ingestion' },
+    { id: 'subscriptions', label: 'Subscriptions', icon: Radio, desc: 'Real-Time FHIR REST Hooks & Audit Ledger' },
+    { id: 'pgx', label: 'PGx Dosing', icon: Dna, desc: 'CPIC Guideline Variant Precision Dosing' },
     { id: 'ehr-sim', label: 'EHR Simulator', icon: Monitor, desc: 'Point-of-Care CDS Hooks & Pre-Flight' },
     { id: 'rosetta', label: 'Rosetta Stone', icon: FileCode2, desc: 'HL7 v2 & C-CDA to FHIR Converter' },
     { id: 'copilot', label: 'Clinical Copilot', icon: Sparkles, desc: 'Deterministic Graph-RAG Causal AI' },
