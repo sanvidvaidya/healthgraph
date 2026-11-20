@@ -16,6 +16,9 @@ import ActuarialSandbox from './components/ActuarialSandbox';
 import ResourceInspector from './components/ResourceInspector';
 import RecordUploader from './components/RecordUploader';
 import CommandPalette from './components/CommandPalette';
+import SmartOnFhir from './components/SmartOnFhir';
+import SubscriptionsConsole from './components/SubscriptionsConsole';
+import PharmacogenomicsLab from './components/PharmacogenomicsLab';
 import { api } from './api';
 
 export default function App() {

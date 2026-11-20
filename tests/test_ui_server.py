@@ -39,6 +39,30 @@ class TestUIShell(unittest.TestCase):
         self.assertGreater(os.path.getsize(index_file), 100, "SPA index is unexpectedly empty")
 
 
+
+    def test_serve_robots_and_sitemap(self):
+        """Verify GET /robots.txt and /sitemap.xml serve search engine crawlers."""
+        from healthgraph.app import serve_robots, serve_sitemap
+
+        async def run_req(endpoint, path):
+            scope = {
+                "type": "http",
+                "method": "GET",
+                "path": path,
+                "headers": [],
+                "query_string": b"",
+            }
+            async def receive():
+                return {"type": "http.request", "body": b""}
+            req = Request(scope, receive)
+            return await endpoint(req)
+
+        robots_res = asyncio.run(run_req(serve_robots, "/robots.txt"))
+        self.assertEqual(robots_res.status_code, 200)
+
+        sitemap_res = asyncio.run(run_req(serve_sitemap, "/sitemap.xml"))
+        self.assertEqual(sitemap_res.status_code, 200)
+
 if __name__ == "__main__":
     unittest.main()
 
