@@ -31,6 +31,9 @@ from healthgraph.core.privacy import PrivacyEngine
 from healthgraph.core.actuarial import ActuarialEngine
 from healthgraph.core.smart import SmartFhirEngine
 from healthgraph.core.subscriptions import SubscriptionEngine
+from healthgraph.core.bulk_data import BulkDataEngine
+from healthgraph.core.sdoh import SDOHEngine
+from healthgraph.core.smart import SmartServerEmulator
 
 
 def create_fhir_bundle_response(resources: List[Dict[str, Any]], total: Optional[int] = None) -> JSONResponse:
@@ -75,6 +78,8 @@ class HealthGraphService:
         self.actuarial = ActuarialEngine()
         self.subscriptions = SubscriptionEngine(self.repo, self.store, rebuilder_callback=self._rebuild_all_engines)
         self.pgx_engine = PharmacogenomicsEngine(self.repo)
+        self.bulk_data = BulkDataEngine(self.repo, self.store)
+        self.sdoh = SDOHEngine(self.repo)
 
     def _sync_store_from_bundle(self):
         self.store.clear()
@@ -125,7 +130,28 @@ class HealthGraphService:
                 "documentation": "Educational FHIR R4 server demonstrating reference resolution, provenance, and data quality.",
                 "security": {
                     "cors": True,
-                    "description": "Educational synthetic demonstration. No credentials or authentication required."
+                    "service": [
+                        {
+                            "coding": [
+                                {
+                                    "system": "http://terminology.hl7.org/CodeSystem/restful-security-service",
+                                    "code": "SMART-on-FHIR",
+                                    "display": "SMART on FHIR"
+                                }
+                            ],
+                            "text": "OAuth 2.0 PKCE SMART App Launch"
+                        }
+                    ],
+                    "extension": [
+                        {
+                            "url": "http://fhir-registry.smarthealthit.org/StructureDefinition/oauth-uris",
+                            "extension": [
+                                {"url": "authorize", "valueUri": f"{str(request.base_url).rstrip('/')}/oauth/authorize"},
+                                {"url": "token", "valueUri": f"{str(request.base_url).rstrip('/')}/oauth/token"}
+                            ]
+                        }
+                    ],
+                    "description": "Educational synthetic demonstration supporting SMART on FHIR v2.0."
                 },
                 "resource": [
                     {
@@ -1093,3 +1119,195 @@ class HealthGraphService:
 
         result = self.pgx_engine.pre_order_cds_check(patient_id=patient_id, drug_name=drug_name, rxnorm_code=rxnorm_code)
         return JSONResponse(result)
+
+
+    # --- SMART on FHIR Server Discovery & OAuth 2.0 PKCE Handlers ---
+    async def get_well_known_smart(self, request: Request) -> JSONResponse:
+        """GET /.well-known/smart-configuration - Standard HL7 SMART App Launch discovery."""
+        base_url = str(request.base_url).rstrip("/")
+        doc = SmartServerEmulator.get_discovery_document(base_url=base_url)
+        return JSONResponse(doc, headers={"Content-Type": "application/json; charset=utf-8"})
+
+    async def oauth_authorize(self, request: Request) -> Response:
+        """GET /oauth/authorize - Simulated SMART OAuth 2.0 PKCE Authorization Endpoint."""
+        client_id = request.query_params.get("client_id", "healthgraph_smart_client")
+        redirect_uri = request.query_params.get("redirect_uri", "")
+        code_challenge = request.query_params.get("code_challenge", "")
+        scope = request.query_params.get("scope", "patient/*.read launch/patient openid")
+        state = request.query_params.get("state", "")
+        launch_id = request.query_params.get("launch", "PAT-VANCE-01")
+
+        patient_id = "PAT-VANCE-01"
+        if launch_id and launch_id.startswith("PAT-"):
+            patient_id = launch_id
+
+        code = SmartServerEmulator.issue_auth_code(
+            client_id=client_id,
+            redirect_uri=redirect_uri,
+            code_challenge=code_challenge,
+            scope=scope,
+            patient_id=patient_id,
+            state=state
+        )
+
+        if redirect_uri:
+            delim = "&" if "?" in redirect_uri else "?"
+            redirect_target = f"{redirect_uri}{delim}code={code}&state={state}"
+            return Response(status_code=302, headers={"Location": redirect_target})
+
+        return JSONResponse({
+            "status": "authorized",
+            "code": code,
+            "state": state,
+            "scope": scope,
+            "patient_context": patient_id
+        })
+
+    async def oauth_token(self, request: Request) -> JSONResponse:
+        """POST /oauth/token - Simulated SMART OAuth 2.0 PKCE Token Exchange Endpoint."""
+        body = {}
+        try:
+            content_type = request.headers.get("content-type", "")
+            if "application/json" in content_type:
+                body = await request.json()
+            else:
+                form = await request.form()
+                body = dict(form)
+        except Exception:
+            body = {}
+
+        code = body.get("code", "")
+        client_id = body.get("client_id", "healthgraph_smart_client")
+        code_verifier = body.get("code_verifier", "")
+        redirect_uri = body.get("redirect_uri", "")
+
+        try:
+            token_payload = SmartServerEmulator.exchange_code_for_token(
+                code=code,
+                client_id=client_id,
+                code_verifier=code_verifier,
+                redirect_uri=redirect_uri
+            )
+            return JSONResponse(token_payload)
+        except Exception as e:
+            return JSONResponse({"error": "invalid_grant", "error_description": str(e)}, status_code=400)
+
+    # --- ONC § 170.315(g)(10) FHIR Bulk Data Access ($export) Handlers ---
+    async def fhir_bulk_export_patient(self, request: Request) -> Response:
+        """GET/POST /fhir/Patient/$export - Patient-level FHIR Bulk Data export."""
+        type_param = request.query_params.get("_type", "")
+        type_filter = [t.strip() for t in type_param.split(",")] if type_param else None
+        since = request.query_params.get("_since")
+
+        job = self.bulk_data.create_export_job(
+            export_type="patient",
+            request_url=str(request.url),
+            type_filter=type_filter,
+            since=since
+        )
+        return Response(
+            status_code=202,
+            headers={
+                "Content-Location": f"/fhir/bulk-status/{job.job_id}",
+                "Access-Control-Expose-Headers": "Content-Location, X-Progress, Retry-After"
+            }
+        )
+
+    async def fhir_bulk_export_system(self, request: Request) -> Response:
+        """GET/POST /fhir/$export - System-wide FHIR Bulk Data export."""
+        type_param = request.query_params.get("_type", "")
+        type_filter = [t.strip() for t in type_param.split(",")] if type_param else None
+        since = request.query_params.get("_since")
+
+        job = self.bulk_data.create_export_job(
+            export_type="system",
+            request_url=str(request.url),
+            type_filter=type_filter,
+            since=since
+        )
+        return Response(
+            status_code=202,
+            headers={
+                "Content-Location": f"/fhir/bulk-status/{job.job_id}",
+                "Access-Control-Expose-Headers": "Content-Location, X-Progress, Retry-After"
+            }
+        )
+
+    async def fhir_bulk_export_group(self, request: Request) -> Response:
+        """GET/POST /fhir/Group/{id}/$export - Group-level FHIR Bulk Data export."""
+        group_id = request.path_params.get("id", "all")
+        type_param = request.query_params.get("_type", "")
+        type_filter = [t.strip() for t in type_param.split(",")] if type_param else None
+        since = request.query_params.get("_since")
+
+        job = self.bulk_data.create_export_job(
+            export_type=f"group-{group_id}",
+            request_url=str(request.url),
+            type_filter=type_filter,
+            since=since
+        )
+        return Response(
+            status_code=202,
+            headers={
+                "Content-Location": f"/fhir/bulk-status/{job.job_id}",
+                "Access-Control-Expose-Headers": "Content-Location, X-Progress, Retry-After"
+            }
+        )
+
+    async def fhir_bulk_status(self, request: Request) -> Response:
+        """GET /fhir/bulk-status/{id} - Status polling for FHIR Bulk Data job."""
+        job_id = request.path_params.get("id", "")
+        job = self.bulk_data.get_job(job_id)
+        if not job:
+            return JSONResponse({"resourceType": "OperationOutcome", "issue": [{"severity": "error", "code": "not-found", "diagnostics": f"Job {job_id} not found"}]}, status_code=404)
+
+        if job.status == "in-progress":
+            return Response(
+                status_code=202,
+                headers={
+                    "X-Progress": f"{job.progress_percent}%",
+                    "Retry-After": "1",
+                    "Access-Control-Expose-Headers": "X-Progress, Retry-After"
+                }
+            )
+
+        base_url = str(request.base_url).rstrip("/")
+        manifest = job.to_manifest(base_url=base_url)
+        return JSONResponse(manifest, headers={"Content-Type": "application/json; charset=utf-8"})
+
+    async def fhir_bulk_download(self, request: Request) -> Response:
+        """GET /fhir/bulk-download/{id}/{resource_file} - Streams NDJSON file."""
+        job_id = request.path_params.get("id", "")
+        resource_file = request.path_params.get("resource_file", "")
+        resource_type = resource_file.replace(".ndjson", "")
+
+        stream = self.bulk_data.get_ndjson_stream(job_id, resource_type)
+        if stream is None:
+            return JSONResponse({"error": f"Resource stream {resource_file} not found in job {job_id}"}, status_code=404)
+
+        return Response(
+            content=stream,
+            media_type="application/fhir+ndjson",
+            headers={"Content-Disposition": f"attachment; filename={resource_file}"}
+        )
+
+    # --- Social Determinants of Health (SDOH) Handlers ---
+    async def api_get_sdoh_catalogs(self, request: Request) -> JSONResponse:
+        """GET /api/sdoh/catalogs - Gravity Project LOINC & Z-code catalogs."""
+        return JSONResponse(self.sdoh.get_catalog())
+
+    async def api_get_patient_sdoh(self, request: Request) -> JSONResponse:
+        """GET /api/sdoh/patient/{id} - Longitudinal SDOH profile and Z-codes."""
+        patient_id = request.path_params.get("id", "PAT-VANCE-01")
+        return JSONResponse(self.sdoh.get_patient_sdoh(patient_id))
+
+    async def api_post_sdoh_screen(self, request: Request) -> JSONResponse:
+        """POST /api/sdoh/screen - Evaluates custom SDOH screening questionnaire."""
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        patient_id = body.get("patient_id", "PAT-VANCE-01")
+        answers = body.get("answers", {})
+        res = self.sdoh.evaluate_screening(patient_id, answers)
+        return JSONResponse(res)

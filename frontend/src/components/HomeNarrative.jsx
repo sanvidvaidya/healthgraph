@@ -1013,6 +1013,27 @@ export default function HomeNarrative({ setCurrentTab, setSelectedPatientId, onS
                             <span>Privacy & Twins</span>
                           </button>
                           <button
+                            onClick={() => setCurrentTab('smart')}
+                            className="studio-control-btn"
+                            style={{ padding: '8px 12px', fontSize: '12px', borderRadius: '6px' }}
+                          >
+                            <span>SMART on FHIR</span>
+                          </button>
+                          <button
+                            onClick={() => setCurrentTab('subscriptions')}
+                            className="studio-control-btn"
+                            style={{ padding: '8px 12px', fontSize: '12px', borderRadius: '6px' }}
+                          >
+                            <span>Subscriptions</span>
+                          </button>
+                          <button
+                            onClick={() => setCurrentTab('pgx')}
+                            className="studio-control-btn"
+                            style={{ padding: '8px 12px', fontSize: '12px', borderRadius: '6px' }}
+                          >
+                            <span>PGx Dosing</span>
+                          </button>
+                          <button
                             onClick={() => setCurrentTab('actuarial')}
                             className="studio-control-btn"
                             style={{ padding: '8px 12px', fontSize: '12px', borderRadius: '6px' }}

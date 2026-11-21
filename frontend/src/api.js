@@ -1453,3 +1453,191 @@ function getFallbackPgxPreOrder(patientId, drugName) {
     recommendation: `No high-risk CPIC pharmacogenomic contraindications detected for ${drugName} with current patient variant profile.`
   };
 }
+
+
+// --- SDOH and FHIR Bulk Data Access ---
+api.getPatientSdoh = (patientId) => fetchJson(`/api/sdoh/patient/${encodeURIComponent(patientId)}`).catch(() => getFallbackPatientSdoh(patientId));
+api.getSdohCatalogs = () => fetchJson('/api/sdoh/catalogs').catch(() => getFallbackSdohCatalogs());
+api.screenSdoh = (patientId, answers) => fetchJson('/api/sdoh/screen', {
+  method: 'POST',
+  body: JSON.stringify({ patient_id: patientId, answers })
+}).catch(() => getFallbackSdohScreen(patientId, answers));
+
+api.startBulkExport = (typeFilter = '', since = '') => {
+  const params = new URLSearchParams();
+  if (typeFilter) params.set('_type', typeFilter);
+  if (since) params.set('_since', since);
+  const q = params.toString() ? `?${params.toString()}` : '';
+  return fetch(`/fhir/Patient/$export${q}`, {
+    method: 'GET',
+    headers: { 'Accept': 'application/fhir+json', 'Prefer': 'respond-async' }
+  }).then(res => {
+    const loc = res.headers.get('content-location') || res.headers.get('Content-Location');
+    const jobId = loc ? loc.split('/').pop() : `job-${Date.now()}`;
+    return { status: res.status, contentLocation: loc, jobId };
+  }).catch(() => ({ status: 202, contentLocation: `/fhir/bulk-status/job-sim-${Date.now()}`, jobId: `job-sim-${Date.now()}` }));
+};
+
+api.pollBulkExportStatus = (jobId) => fetchJson(`/fhir/bulk-status/${encodeURIComponent(jobId)}`).catch(() => getFallbackBulkStatus(jobId));
+
+api.downloadBulkNdjson = (jobId, resourceFile) => fetch(`/fhir/bulk-download/${encodeURIComponent(jobId)}/${encodeURIComponent(resourceFile)}`)
+  .then(res => res.text())
+  .catch(() => getFallbackNdjson(resourceFile));
+
+function getFallbackPatientSdoh(patientId) {
+  if (patientId === 'PAT-THORNE-01') {
+    return {
+      patient_name: "Arthur Thorne",
+      overall_vulnerability_score: 52,
+      vulnerability_tier: "Moderate",
+      domains: [
+        {
+          domain: "Social Connection & Isolation",
+          status: "POSITIVE_SCREEN",
+          loinc_code: "63503-7",
+          assessment: "Social Isolation Score",
+          icd10_zcode: "Z60.0",
+          findings: "Lives alone following bereavement; limited nearby family support during post-CABG surgical recovery.",
+          severity: "HIGH",
+          screening_date: "2026-11-02"
+        }
+      ],
+      active_zcodes: [
+        { code: "Z60.0", display: "Social isolation / living alone", category: "SDOH-Social" }
+      ],
+      recommended_referrals: [
+        {
+          id: "REF-SDOH-03",
+          service: "Post-Acute Cardiac Rehab Peer Companion & Home Health Aide",
+          cbo_partner: "HeartWise Recovery Network",
+          status: "PENDING_CONSENT",
+          target_zcode: "Z60.0",
+          rationale: "Bi-weekly home visits to verify DAPT compliance (Ticagrelor + ASA) and assist with cardiac rehab exercise regimen."
+        }
+      ],
+      clinical_impact_summary: "Social isolation correlates with 3x higher 30-day post-CABG readmission risk without home recovery support."
+    };
+  }
+
+  return {
+    patient_name: "Harold Vance",
+    overall_vulnerability_score: 68,
+    vulnerability_tier: "Moderate-High",
+    domains: [
+      {
+        domain: "Food Insecurity",
+        status: "POSITIVE_SCREEN",
+        loinc_code: "88121-9",
+        assessment: "Hunger Vital Sign",
+        icd10_zcode: "Z59.41",
+        findings: "Patient reports skipping meals 3-4 days/month due to grocery cost constraints. Directly exacerbates glycemic variability.",
+        severity: "HIGH",
+        screening_date: "2026-10-15"
+      },
+      {
+        domain: "Transportation Insecurity",
+        status: "POSITIVE_SCREEN",
+        loinc_code: "93030-5",
+        assessment: "Transportation Security",
+        icd10_zcode: "Z59.82",
+        findings: "Reliant on regional paratransit; 2 missed nephrology/endocrinology follow-ups in prior 6 months.",
+        severity: "MODERATE",
+        screening_date: "2026-09-20"
+      }
+    ],
+    active_zcodes: [
+      { code: "Z59.41", display: "Food insecurity", category: "SDOH-Food" },
+      { code: "Z59.82", display: "Transportation insecurity", category: "SDOH-Transport" }
+    ],
+    recommended_referrals: [
+      {
+        id: "REF-SDOH-01",
+        service: "Medically Tailored Meals (MTM) Assistance",
+        cbo_partner: "Community Nutrition Alliance",
+        status: "ACTIVE_REFERRED",
+        target_zcode: "Z59.41",
+        rationale: "Renal-protective low-sodium diabetic meal delivery to prevent postprandial hypoglycemic excursions."
+      },
+      {
+        id: "REF-SDOH-02",
+        service: "Non-Emergency Medical Transportation (NEMT) Voucher",
+        cbo_partner: "TransitCare Mobility Program",
+        status: "SCHEDULED",
+        target_zcode: "Z59.82",
+        rationale: "Direct coordinated transport for scheduled eGFR laboratory surveillance and podiatry visits."
+      }
+    ],
+    clinical_impact_summary: "Food insecurity increases risk of sulfonylurea/insulin hypoglycemia; transportation barriers compound CKD Stage 3b monitoring delays."
+  };
+}
+
+function getFallbackSdohCatalogs() {
+  return [
+    {
+      domain: "Food Insecurity",
+      loinc_code: "88121-9",
+      loinc_display: "Hunger Vital Sign screening assessment",
+      icd10_zcode: "Z59.41",
+      zcode_display: "Food insecurity"
+    },
+    {
+      domain: "Transportation Insecurity",
+      loinc_code: "93030-5",
+      loinc_display: "Transportation security assessment",
+      icd10_zcode: "Z59.82",
+      zcode_display: "Transportation insecurity"
+    },
+    {
+      domain: "Housing Quality & Instability",
+      loinc_code: "71802-3",
+      loinc_display: "Housing status assessment",
+      icd10_zcode: "Z59.1",
+      zcode_display: "Inadequate housing"
+    }
+  ];
+}
+
+function getFallbackSdohScreen(patientId, answers = {}) {
+  let score = 0;
+  const zcodes = [];
+  if (answers.food_insecurity) {
+    score += 35;
+    zcodes.push({ code: "Z59.41", display: "Food insecurity" });
+  }
+  if (answers.transportation_insecurity) {
+    score += 30;
+    zcodes.push({ code: "Z59.82", display: "Transportation insecurity" });
+  }
+  return {
+    patient_id: patientId,
+    overall_vulnerability_score: score,
+    vulnerability_tier: score > 50 ? "High" : (score > 25 ? "Moderate" : "Low"),
+    assigned_zcodes: zcodes,
+    fhir_observation_preview: {
+      resourceType: "Observation",
+      status: "final",
+      code: { coding: [{ system: "http://loinc.org", code: "88121-9", display: "Hunger Vital Sign" }] }
+    }
+  };
+}
+
+function getFallbackBulkStatus(jobId) {
+  return {
+    transactionTime: new Date().toISOString(),
+    request: `https://healthgraph-8exr.vercel.app/fhir/Patient/$export`,
+    requiresAccessToken: false,
+    output: [
+      { type: "Patient", url: `/fhir/bulk-download/${jobId}/Patient.ndjson`, count: 5 },
+      { type: "Observation", url: `/fhir/bulk-download/${jobId}/Observation.ndjson`, count: 24 },
+      { type: "Condition", url: `/fhir/bulk-download/${jobId}/Condition.ndjson`, count: 8 },
+      { type: "MedicationRequest", url: `/fhir/bulk-download/${jobId}/MedicationRequest.ndjson`, count: 6 }
+    ],
+    error: []
+  };
+}
+
+function getFallbackNdjson(resourceFile) {
+  const type = resourceFile.replace('.ndjson', '');
+  return JSON.stringify({ resourceType: type, id: `${type.toLowerCase()}-sample-01`, status: "active" }) + "\n" +
+         JSON.stringify({ resourceType: type, id: `${type.toLowerCase()}-sample-02`, status: "active" }) + "\n";
+}

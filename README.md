@@ -6,7 +6,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![FHIR R4](https://img.shields.io/badge/FHIR-Release%204-firebrick.svg)](https://hl7.org/fhir/R4/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-teal.svg)](LICENSE)
-[![Tests: Passing](https://img.shields.io/badge/tests-51%20passed-emerald.svg)](tests/)
+[![Tests: Passing](https://img.shields.io/badge/tests-66%20passed-emerald.svg)](tests/)
 
 ---
 
@@ -42,6 +42,28 @@ HealthGraph provides two complementary presentation surfaces driven by the same 
 ---
 
 ## 3. Core Architecture and Features
+
+### ONC § 170.315(g)(10) FHIR Bulk Data Access ($export)
+Located in `healthgraph/core/bulk_data.py`, this engine implements the SMART / HL7 FHIR Bulk Data Access IG v2.0.0 for population-scale health analytics and data lake synchronization:
+- **Asynchronous Execution Pattern**: Implements standard HTTP 202 Accepted kickoff with `Content-Location` polling header pointing to `/fhir/bulk-status/{job_id}`.
+- **Resource & Temporal Filtering**: Supports `_type` resource selection (`Patient,Observation,Condition,MedicationRequest`) and `_since` ISO-8601 temporal delta filtering.
+- **Line-Delimited JSON Streaming**: Generates `application/fhir+ndjson` manifests and individual resource type data files with byte-level counts.
+
+### HL7 Gravity Project Social Determinants of Health (SDOH)
+Located in `healthgraph/core/sdoh.py`, aligns clinical records with social vulnerability and health equity standards:
+- **Standard Screening Instruments**: Hunger Vital Sign (LOINC `88121-9`), Transportation Security (LOINC `93030-5`), and Social Isolation (LOINC `63503-7`).
+- **ICD-10-CM Z-Code Mappings**: Automatically translates positive screenings into official billing and diagnostic Z-codes (`Z59.41` Food Insecurity, `Z59.82` Transportation Insecurity, `Z60.0` Social Isolation).
+- **Closed-Loop Community Referrals**: Tracks community-based organization (CBO) partner service coordination (e.g. Medically Tailored Meals, NEMT mobility vouchers).
+
+### CPIC Pharmacogenomics (PGx) Precision Dosing
+Located in `healthgraph/core/pharmacogenomics.py`, evaluates patient genetic variants against CPIC Level A clinical guidelines:
+- **Metabolizer Phenotypes**: Translates CYP2C19 (Clopidogrel resistance) and CYP2D6 (Codeine/Tramadol toxicity) diplotypes into actionable risk tiers.
+- **Point-of-Care Pre-Order Verification**: Intercepts active pharmacotherapy prescriptions before fulfillment with guided alternative drug recommendations.
+
+### SMART on FHIR v2.0 OAuth 2.0 PKCE Architecture
+Located in `healthgraph/core/smart.py`:
+- **Discovery**: Public `/.well-known/smart-configuration` endpoint detailing token URLs, supported scopes (`patient/*.read`, `launch/patient`), and PKCE `S256` capabilities.
+- **PKCE Authentication**: Implements SHA-256 code challenge generation and verification, protecting against authorization code interception attacks.
 
 ### Clinical Decision Support (CDS) Rules Engine
 Located in `healthgraph/core/cds.py`, the CDS engine evaluates deterministic clinical rules against aggregated patient graphs:

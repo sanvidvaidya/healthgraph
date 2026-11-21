@@ -17,7 +17,8 @@ import {
   RefreshCw,
   Zap,
   Play,
-  Info
+  Info,
+  Download
 } from 'lucide-react';
 import { api } from '../api';
 
@@ -43,6 +44,12 @@ export default function InteropLab({ onSelectResource }) {
   const [chaosScenarios, setChaosScenarios] = useState(null);
   const [activeChaosKey, setActiveChaosKey] = useState('DANGLING_PROVENANCE');
   const [chaosValidationResult, setChaosValidationResult] = useState(null);
+  const [bulkSelectedTypes, setBulkSelectedTypes] = useState(['Patient', 'Observation', 'Condition', 'MedicationRequest']);
+  const [bulkExportJob, setBulkExportJob] = useState(null);
+  const [bulkExportStatus, setBulkExportStatus] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [activeNdjsonPreview, setActiveNdjsonPreview] = useState(null);
+  const [previewContent, setPreviewContent] = useState('');
 
   const conduitSvgRef = useRef(null);
 
@@ -944,6 +951,182 @@ export default function InteropLab({ onSelectResource }) {
           )}
         </div>
       )}
+
+      {/* SECTION 4: ONC § 170.315(g)(10) FHIR Bulk Data Access ($export) */}
+      <div style={{
+        marginTop: '48px',
+        background: 'var(--surface-white)',
+        border: '1px solid var(--border-medium)',
+        borderRadius: '8px',
+        padding: '32px',
+        boxShadow: 'var(--shadow-card)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+              <span className="badge badge-teal" style={{ fontSize: '10px', letterSpacing: '0.06em' }}>
+                ONC § 170.315(g)(10) CERTIFICATION
+              </span>
+              <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--ink-muted)' }}>
+                SMART/HL7 FHIR BULK DATA ACCESS IG v2.0.0
+              </span>
+            </div>
+            <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '24px', fontWeight: 500, color: 'var(--ink-primary)', margin: 0 }}>
+              Population-Level Asynchronous FHIR Bulk Data ($export)
+            </h2>
+            <p style={{ fontSize: '13.5px', color: 'var(--ink-secondary)', margin: '4px 0 0 0', maxWidth: '820px' }}>
+              Execute high-throughput streaming exports for population health analytics, actuarial modeling, and research data lakes. Generates asynchronous HTTP 202 job manifests with downloadable line-delimited JSON (NDJSON) payloads.
+            </p>
+          </div>
+
+          <button
+            onClick={handleKickoffBulkExport}
+            disabled={isExporting || bulkSelectedTypes.length === 0}
+            className="studio-control-btn active"
+            style={{
+              padding: '10px 20px',
+              fontSize: '13px',
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            <Download size={15} />
+            <span>{isExporting ? 'Generating NDJSON Stream...' : 'Kickoff $export Job'}</span>
+          </button>
+        </div>
+
+        {/* Resource Type Filters */}
+        <div style={{ marginBottom: '24px' }}>
+          <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--ink-muted)', marginBottom: '8px' }}>
+            SELECT TARGET FHIR RESOURCE TYPES (_type):
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {['Patient', 'Observation', 'Condition', 'MedicationRequest', 'Encounter', 'Procedure', 'DiagnosticReport'].map((type) => {
+              const isSelected = bulkSelectedTypes.includes(type);
+              return (
+                <button
+                  key={type}
+                  onClick={() => {
+                    if (isSelected) {
+                      setBulkSelectedTypes(bulkSelectedTypes.filter(t => t !== type));
+                    } else {
+                      setBulkSelectedTypes([...bulkSelectedTypes, type]);
+                    }
+                  }}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    fontFamily: 'var(--font-mono)',
+                    cursor: 'pointer',
+                    border: isSelected ? '1px solid var(--spruce)' : '1px solid var(--border-medium)',
+                    background: isSelected ? 'rgba(13, 148, 136, 0.1)' : 'var(--surface-recessed)',
+                    color: isSelected ? 'var(--spruce)' : 'var(--ink-secondary)',
+                    fontWeight: isSelected ? 600 : 400
+                  }}
+                >
+                  {isSelected ? '✓ ' : '+ '}{type}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Active Export Job Details */}
+        {bulkExportStatus && (
+          <div style={{
+            background: 'var(--surface-recessed)',
+            border: '1px solid var(--border-medium)',
+            borderRadius: '6px',
+            padding: '20px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CheckCircle2 size={16} color="var(--emerald)" />
+                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ink-primary)' }}>
+                  Job Completed (HTTP 200 OK) • FHIR Bulk Data Manifest
+                </span>
+              </div>
+              <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--ink-muted)' }}>
+                Transaction Time: {bulkExportStatus.transactionTime}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+              {bulkExportStatus.output?.map((out) => (
+                <div
+                  key={out.type}
+                  style={{
+                    background: 'var(--surface-white)',
+                    border: '1px solid var(--border-medium)',
+                    borderRadius: '6px',
+                    padding: '14px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ink-primary)' }}>
+                      {out.type}.ndjson
+                    </div>
+                    <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--ink-muted)', marginTop: '2px' }}>
+                      {out.count} records serialized
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleInspectNdjson(out.url)}
+                    style={{
+                      padding: '5px 10px',
+                      fontSize: '11px',
+                      fontFamily: 'var(--font-mono)',
+                      borderRadius: '4px',
+                      border: '1px solid var(--border-medium)',
+                      background: activeNdjsonPreview === `${out.type}.ndjson` ? 'var(--spruce)' : 'var(--surface-recessed)',
+                      color: activeNdjsonPreview === `${out.type}.ndjson` ? '#FFFFFF' : 'var(--ink-primary)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Inspect Stream
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* NDJSON Stream Viewer */}
+            {activeNdjsonPreview && (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--ink-muted)' }}>
+                    LINE-DELIMITED JSON STREAM ({activeNdjsonPreview}):
+                  </span>
+                  <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--emerald)' }}>
+                    application/fhir+ndjson
+                  </span>
+                </div>
+                <pre style={{
+                  margin: 0,
+                  padding: '14px',
+                  borderRadius: '6px',
+                  background: '#0F172A',
+                  color: '#38BDF8',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '11.5px',
+                  lineHeight: 1.5,
+                  overflowX: 'auto',
+                  maxHeight: '240px'
+                }}>
+                  {previewContent}
+                </pre>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
     </div>
   );
 }
