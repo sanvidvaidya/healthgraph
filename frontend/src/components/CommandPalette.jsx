@@ -22,7 +22,11 @@ import {
   Zap,
   Monitor,
   FileCode2,
-  Lock
+  Lock,
+  KeyRound,
+  Radio,
+  Dna,
+  Download
 } from 'lucide-react';
 
 export default function CommandPalette({
@@ -78,6 +82,51 @@ export default function CommandPalette({
       }
     })),
 
+    // Interoperability & Genomic Engines
+    {
+      category: 'Interoperability & Genomic Engines',
+      id: 'tool-smart',
+      title: 'SMART on FHIR OAuth 2.0 PKCE Launch',
+      subtitle: 'App launch sequence, discovery metadata, and automated EHR bundle ingestion',
+      icon: KeyRound,
+      action: () => {
+        setCurrentTab('smart');
+        onClose();
+      }
+    },
+    {
+      category: 'Interoperability & Genomic Engines',
+      id: 'tool-subscriptions',
+      title: 'Real-Time FHIR R4 Subscriptions & REST Hooks',
+      subtitle: 'Asynchronous clinical event hooks, HMAC verification, and dispatch audit ledger',
+      icon: Radio,
+      action: () => {
+        setCurrentTab('subscriptions');
+        onClose();
+      }
+    },
+    {
+      category: 'Interoperability & Genomic Engines',
+      id: 'tool-pgx',
+      title: 'Pharmacogenomics & CPIC Precision Dosing',
+      subtitle: 'CYP2C19/CYP2D6 variant interpretation and point-of-care pre-order checks',
+      icon: Dna,
+      action: () => {
+        setCurrentTab('pgx');
+        onClose();
+      }
+    },
+    {
+      category: 'Interoperability & Genomic Engines',
+      id: 'tool-bulk-export',
+      title: 'ONC § 170.315(g)(10) FHIR Bulk Data ($export)',
+      subtitle: 'High-throughput population NDJSON streaming with async job manifests',
+      icon: Download,
+      action: () => {
+        setCurrentTab('pipeline');
+        onClose();
+      }
+    },
     // Clinical Workspaces
     {
       category: 'Clinical Workspaces',

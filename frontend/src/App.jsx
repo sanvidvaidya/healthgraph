@@ -281,6 +281,53 @@ export default function App() {
               />
             </motion.div>
           )}
+
+          {currentTab === 'smart' && (
+            <motion.div
+              key="smart"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+            >
+              <SmartOnFhir
+                selectedPatientId={selectedPatientId}
+                onSelectResource={handleSelectResource}
+                setCurrentTab={setCurrentTab}
+              />
+            </motion.div>
+          )}
+
+          {currentTab === 'subscriptions' && (
+            <motion.div
+              key="subscriptions"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+            >
+              <SubscriptionsConsole
+                selectedPatientId={selectedPatientId}
+                setCurrentTab={setCurrentTab}
+              />
+            </motion.div>
+          )}
+
+          {currentTab === 'pgx' && (
+            <motion.div
+              key="pgx"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+            >
+              <PharmacogenomicsLab
+                selectedPatientId={selectedPatientId}
+                onSelectResource={handleSelectResource}
+                setCurrentTab={setCurrentTab}
+              />
+            </motion.div>
+          )}
         </AnimatePresence>
       </main>
 

@@ -61,3 +61,7 @@ desktop.ini
 # Antigravity and agent runtime files
 .system_generated/
 .gemini/
+
+# Ensure pre-built dist assets are tracked
+!frontend/dist/**
+!dist/**

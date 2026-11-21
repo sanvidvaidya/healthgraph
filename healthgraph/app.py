@@ -79,6 +79,23 @@ routes.extend([
     Route("/api/pgx/profile/{id}", endpoint=service.api_get_patient_pgx_profile, methods=["GET"]),
     Route("/api/pgx/evaluate", endpoint=service.api_post_pgx_evaluate, methods=["POST"]),
     Route("/api/pgx/pre-order-check", endpoint=service.api_post_pgx_pre_order_check, methods=["POST"]),
+    # SMART-on-FHIR Standard Discovery & OAuth2 Emulation
+    Route("/.well-known/smart-configuration", endpoint=service.get_well_known_smart, methods=["GET"]),
+    Route("/oauth/authorize", endpoint=service.oauth_authorize, methods=["GET", "POST"]),
+    Route("/oauth/token", endpoint=service.oauth_token, methods=["POST"]),
+
+    # ONC Cures Act § 170.315(g)(10) FHIR Bulk Data Access ($export)
+    Route("/fhir/Patient/$export", endpoint=service.fhir_bulk_export_patient, methods=["GET", "POST"]),
+    Route("/fhir/$export", endpoint=service.fhir_bulk_export_system, methods=["GET", "POST"]),
+    Route("/fhir/Group/{id}/$export", endpoint=service.fhir_bulk_export_group, methods=["GET", "POST"]),
+    Route("/fhir/bulk-status/{id}", endpoint=service.fhir_bulk_status, methods=["GET"]),
+    Route("/fhir/bulk-download/{id}/{resource_file}", endpoint=service.fhir_bulk_download, methods=["GET"]),
+
+    # Social Determinants of Health (SDOH) & Gravity Project
+    Route("/api/sdoh/catalogs", endpoint=service.api_get_sdoh_catalogs, methods=["GET"]),
+    Route("/api/sdoh/patient/{id}", endpoint=service.api_get_patient_sdoh, methods=["GET"]),
+    Route("/api/sdoh/screen", endpoint=service.api_post_sdoh_screen, methods=["POST"]),
+
     Route("/fhir/metadata", endpoint=service.get_capability_statement, methods=["GET"]),
     Route("/fhir/{resource_type}", endpoint=service.get_fhir_resource_list, methods=["GET"]),
     Route("/fhir/{resource_type}/{id}", endpoint=service.get_fhir_resource_instance, methods=["GET"]),

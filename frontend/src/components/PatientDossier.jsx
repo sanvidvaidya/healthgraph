@@ -20,7 +20,9 @@ import {
   TrendingUp,
   RefreshCw,
   GitBranch,
-  FlaskConical
+  FlaskConical,
+  Dna,
+  HeartHandshake
 } from 'lucide-react';
 import { api } from '../api';
 
@@ -31,6 +33,8 @@ export default function PatientDossier({ patientId, setPatientId, patients, onSe
   const [hccData, setHccData] = useState(null);
   const [medRecData, setMedRecData] = useState(null);
   const [trialsData, setTrialsData] = useState(null);
+  const [pgxData, setPgxData] = useState(null);
+  const [sdohData, setSdohData] = useState(null);
   const [dossierViewMode, setDossierViewMode] = useState('timeline'); // 'timeline' | 'prior-auth' | 'hcc-risk' | 'med-rec' | 'trials'
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('all');
@@ -44,13 +48,15 @@ export default function PatientDossier({ patientId, setPatientId, patients, onSe
       if (!patientId) return;
       setLoading(true);
       try {
-        const [data, cdsAlerts, priorAuth, hcc, medRec, trials] = await Promise.all([
+        const [data, cdsAlerts, priorAuth, hcc, medRec, trials, pgx, sdoh] = await Promise.all([
           api.getPatientDossier(patientId),
           api.getCdsAlerts(patientId).catch(() => null),
           api.getPriorAuthReadiness(patientId).catch(() => null),
           api.getHccGaps(patientId).catch(() => null),
           api.getMedicationRec(patientId).catch(() => null),
-          api.getTrialsScreen().catch(() => null)
+          api.getTrialsScreen().catch(() => null),
+          api.getPatientPgxProfile(patientId).catch(() => null),
+          api.getPatientSdoh(patientId).catch(() => null)
         ]);
         setDossier(data);
         setCdsData(cdsAlerts);
@@ -58,6 +64,8 @@ export default function PatientDossier({ patientId, setPatientId, patients, onSe
         setHccData(hcc);
         setMedRecData(medRec);
         setTrialsData(trials);
+        setPgxData(pgx);
+        setSdohData(sdoh);
       } catch (err) {
         console.error('Failed to load dossier:', err);
       } finally {
@@ -603,6 +611,76 @@ export default function PatientDossier({ patientId, setPatientId, patients, onSe
               color: 'var(--spruce)'
             }}>
               {eligibleTrialsCount} Matched
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => setDossierViewMode('pgx')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 16px',
+            borderRadius: '6px',
+            border: 'none',
+            background: dossierViewMode === 'pgx' ? 'var(--surface-white)' : 'transparent',
+            boxShadow: dossierViewMode === 'pgx' ? 'var(--shadow-card)' : 'none',
+            color: dossierViewMode === 'pgx' ? 'var(--ink-primary)' : 'var(--ink-secondary)',
+            fontWeight: dossierViewMode === 'pgx' ? 600 : 500,
+            fontSize: '13px',
+            cursor: 'pointer',
+            fontFamily: 'var(--font-sans)',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          <Dna size={15} color="var(--purple)" />
+          <span>PGx &amp; CPIC Dosing</span>
+          {pgxData && (
+            <span style={{
+              fontSize: '10px',
+              fontFamily: 'var(--font-mono)',
+              padding: '1px 6px',
+              borderRadius: '9999px',
+              background: 'rgba(147, 51, 234, 0.15)',
+              color: 'var(--purple)'
+            }}>
+              {pgxData.variants?.length || 2} Genes Profiled
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => setDossierViewMode('sdoh')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 16px',
+            borderRadius: '6px',
+            border: 'none',
+            background: dossierViewMode === 'sdoh' ? 'var(--surface-white)' : 'transparent',
+            boxShadow: dossierViewMode === 'sdoh' ? 'var(--shadow-card)' : 'none',
+            color: dossierViewMode === 'sdoh' ? 'var(--ink-primary)' : 'var(--ink-secondary)',
+            fontWeight: dossierViewMode === 'sdoh' ? 600 : 500,
+            fontSize: '13px',
+            cursor: 'pointer',
+            fontFamily: 'var(--font-sans)',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          <HeartHandshake size={15} color="var(--emerald)" />
+          <span>SDOH &amp; Z-Codes</span>
+          {sdohData && (
+            <span style={{
+              fontSize: '10px',
+              fontFamily: 'var(--font-mono)',
+              padding: '1px 6px',
+              borderRadius: '9999px',
+              background: sdohData.overall_vulnerability_score > 50 ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+              color: sdohData.overall_vulnerability_score > 50 ? 'var(--rose)' : 'var(--emerald)'
+            }}>
+              {sdohData.vulnerability_tier || "Score " + sdohData.overall_vulnerability_score}
             </span>
           )}
         </button>
@@ -1499,6 +1577,239 @@ export default function PatientDossier({ patientId, setPatientId, patients, onSe
           </div>
         </div>
       )}
+      {/* VIEW 6: Pharmacogenomics Profile & CPIC Precision Dosing */}
+      {dossierViewMode === 'pgx' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div style={{
+            background: 'var(--surface-white)',
+            border: '1px solid var(--border-medium)',
+            borderRadius: '8px',
+            padding: '24px',
+            boxShadow: 'var(--shadow-card)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Dna size={22} color="var(--purple)" />
+                  <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--ink-primary)', margin: 0 }}>
+                    Patient Pharmacogenomic Profile &amp; CPIC Guidelines
+                  </h2>
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--ink-secondary)', marginTop: '4px' }}>
+                  Active genotype-phenotype mappings based on CPIC (Clinical Pharmacogenetics Implementation Consortium) Level A guidelines.
+                </div>
+              </div>
+              <button
+                onClick={() => setCurrentTab && setCurrentTab('pgx')}
+                className="studio-control-btn active"
+                style={{ padding: '8px 16px', fontSize: '12px', borderRadius: '6px' }}
+              >
+                <span>Launch Interactive PGx Lab</span>
+                <ArrowRight size={13} />
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+            {pgxData?.variants?.map((v) => (
+              <div
+                key={v.gene}
+                style={{
+                  background: 'var(--surface-white)',
+                  border: '1px solid var(--border-medium)',
+                  borderRadius: '8px',
+                  padding: '20px',
+                  boxShadow: 'var(--shadow-card)'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                  <div>
+                    <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--ink-muted)' }}>GENE TARGET</span>
+                    <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--ink-primary)', margin: '2px 0 0 0' }}>
+                      {v.gene}
+                    </h3>
+                  </div>
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    fontFamily: 'var(--font-mono)',
+                    padding: '3px 8px',
+                    borderRadius: '4px',
+                    background: v.phenotype.includes('Poor') || v.phenotype.includes('Ultra') ? 'rgba(239, 68, 68, 0.12)' : 'rgba(16, 185, 129, 0.12)',
+                    color: v.phenotype.includes('Poor') || v.phenotype.includes('Ultra') ? 'var(--rose)' : 'var(--emerald)'
+                  }}>
+                    {v.phenotype}
+                  </span>
+                </div>
+                <div style={{ fontSize: '12.5px', color: 'var(--ink-secondary)', lineHeight: 1.5, marginBottom: '12px' }}>
+                  Diplotype: <strong style={{ color: 'var(--ink-primary)', fontFamily: 'var(--font-mono)' }}>{v.diplotype}</strong>
+                </div>
+                <div style={{ fontSize: '11.5px', color: 'var(--ink-muted)', background: 'var(--surface-recessed)', padding: '10px 12px', borderRadius: '6px' }}>
+                  {v.clinicalImplication || "Directly modulates systemic exposure, hepatic clearance, and active metabolite generation for indicated regimens."}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* VIEW 7: Social Determinants of Health (SDOH & Z-Codes) */}
+      {dossierViewMode === 'sdoh' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div style={{
+            background: 'var(--surface-white)',
+            border: '1px solid var(--border-medium)',
+            borderRadius: '8px',
+            padding: '24px',
+            boxShadow: 'var(--shadow-card)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <HeartHandshake size={22} color="var(--emerald)" />
+                  <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--ink-primary)', margin: 0 }}>
+                    Social Determinants of Health (SDOH) &amp; Closed-Loop Referrals
+                  </h2>
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--ink-secondary)', marginTop: '4px' }}>
+                  HL7 Gravity Project aligned screenings (Hunger Vital Sign, Transportation Security) mapped to ICD-10-CM Z-codes with active community-based organization (CBO) referrals.
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '16px' }}>
+                <div style={{ textAlign: 'right', borderRight: '1px solid var(--border-medium)', paddingRight: '16px' }}>
+                  <div style={{ fontSize: '10.5px', fontFamily: 'var(--font-mono)', color: 'var(--ink-muted)' }}>VULNERABILITY SCORE</div>
+                  <div style={{ fontSize: '22px', fontWeight: 700, color: sdohData?.overall_vulnerability_score > 50 ? 'var(--rose)' : 'var(--emerald)', fontFamily: 'var(--font-mono)' }}>
+                    {sdohData?.overall_vulnerability_score || 0}/100
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '10.5px', fontFamily: 'var(--font-mono)', color: 'var(--ink-muted)' }}>TIER</div>
+                  <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ink-primary)', marginTop: '3px' }}>
+                    {sdohData?.vulnerability_tier || "Standard"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* SDOH Domains & Assessments */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--ink-primary)', margin: 0 }}>
+              Gravity Project Screening Assessments &amp; Z-Codes
+            </h3>
+            {sdohData?.domains?.map((d, idx) => (
+              <div
+                key={idx}
+                style={{
+                  background: 'var(--surface-white)',
+                  border: '1px solid var(--border-medium)',
+                  borderRadius: '8px',
+                  padding: '18px 22px',
+                  boxShadow: 'var(--shadow-card)'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--ink-primary)' }}>
+                        {d.domain}
+                      </span>
+                      <span style={{
+                        fontSize: '10.5px',
+                        fontWeight: 700,
+                        fontFamily: 'var(--font-mono)',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        background: 'rgba(239, 68, 68, 0.12)',
+                        color: 'var(--rose)'
+                      }}>
+                        {d.icd10_zcode}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--ink-muted)', fontFamily: 'var(--font-mono)', marginTop: '3px' }}>
+                      LOINC: {d.loinc_code} ({d.assessment}) • Screened: {d.screening_date}
+                    </div>
+                  </div>
+                  <span style={{
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    fontFamily: 'var(--font-mono)',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    color: 'var(--rose)'
+                  }}>
+                    {d.status}
+                  </span>
+                </div>
+                <div style={{ fontSize: '12.5px', color: 'var(--ink-secondary)', lineHeight: 1.5 }}>
+                  {d.findings}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Closed-Loop CBO Referrals */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--ink-primary)', margin: 0 }}>
+              Active Closed-Loop Community Referrals (SDOH Service Delivery)
+            </h3>
+            {sdohData?.recommended_referrals?.map((ref) => (
+              <div
+                key={ref.id}
+                style={{
+                  background: 'var(--surface-white)',
+                  border: '1px solid var(--border-medium)',
+                  borderRadius: '8px',
+                  padding: '18px 22px',
+                  boxShadow: 'var(--shadow-card)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '16px'
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <HeartHandshake size={16} color="var(--emerald)" />
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--ink-primary)' }}>
+                      {ref.service}
+                    </span>
+                    <span style={{
+                      fontSize: '10px',
+                      fontFamily: 'var(--font-mono)',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      background: 'rgba(16, 185, 129, 0.12)',
+                      color: 'var(--emerald)'
+                    }}>
+                      {ref.target_zcode}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '11.5px', color: 'var(--ink-muted)', marginTop: '4px' }}>
+                    Partner: <strong style={{ color: 'var(--ink-secondary)' }}>{ref.cbo_partner}</strong> • Rationale: {ref.rationale}
+                  </div>
+                </div>
+
+                <span style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  fontFamily: 'var(--font-mono)',
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  background: 'rgba(16, 185, 129, 0.15)',
+                  color: 'var(--emerald)'
+                }}>
+                  {ref.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
