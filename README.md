@@ -1,215 +1,144 @@
-# HealthGraph: Longitudinal FHIR Healthcare Information System Explorer
+# 🩺 HealthGraph: Longitudinal FHIR Healthcare Intelligence Platform
 
-> **Core Research Question:**
-> *How can distributed, structured healthcare records be validated, interconnected, and interpreted as a cohesive longitudinal clinical system?*
+> **The Core Mission:**  
+> *Transform fragmented, siloed medical records into a coherent, connected, and mathematically verifiable clinical safety graph — with zero black-box AI hallucinations.*
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![FHIR R4](https://img.shields.io/badge/FHIR-Release%204-firebrick.svg)](https://hl7.org/fhir/R4/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-teal.svg)](LICENSE)
 [![Tests: Passing](https://img.shields.io/badge/tests-66%20passed-emerald.svg)](tests/)
+[![Live Production Web App](https://img.shields.io/badge/deployment-live%20on%20vercel-black.svg)](https://healthgraph-8exr.vercel.app)
 
 ---
 
-## 1. Overview and Problem Statement
+## 💡 Explain It To Me Like I'm Five: How I Created This & What It Does
 
-Healthcare information is inherently fragmented across siloed systems. A single patient frequently receives care across independent primary clinics, hospital systems, outpatient laboratories, and community pharmacies. Each organization generates discrete clinical resources such as laboratory observations, encounter summaries, condition diagnoses, and medication orders.
+Imagine you visit three different doctors this year: your family doctor, an urgent care clinic, and an outpatient lab for bloodwork.
+- Doctor A writes a prescription for blood pressure.
+- The lab discovers your kidneys are functioning at 30% capacity (low eGFR).
+- Doctor B at urgent care prescribes an antibiotic that is toxic to weak kidneys.
 
-Standard data interchange formats like HL7 FHIR R4 define standardized data schemas, yet syntactic validity does not guarantee clinical coherence. A medication order may validate cleanly against standard FHIR schemas while pointing to an unknown prescriber identifier. An observational laboratory measurement may arrive weeks before the recorded encounter date, or an active prescription may present severe renal safety contraindications against the patient latest recorded eGFR.
+Because their computer systems don't talk to each other in a smart way, **nobody connects the dots**. The antibiotic gets filled, and you end up in the emergency room with acute kidney damage.
 
-**HealthGraph** solves this challenge by reconstructing relational connections from raw FHIR bundles. It provides an educational, deterministic clinical intelligence platform that validates schemas, resolves references, highlights clinical safety risks, and visualizes patient histories as unified longitudinal narratives.
-
-HealthGraph operates on a **100% deterministic local Python core**. It does not rely on external cloud dependencies, non-deterministic language models, or paid commercial APIs.
-
----
-
-## 2. Dual Deployment Surfaces
-
-HealthGraph provides two complementary presentation surfaces driven by the same deterministic Python service:
-
-1. **Cinematic Web Application (React 19, Vite, Tailwind CSS, GSAP, Three.js)**:
-   - Kinetic scroll narrative walking users through the healthcare data journey across five visual chapters.
-   - Global Clinician Command Palette activated with `Ctrl+K` or `Cmd+K`.
-   - Comprehensive Patient Dossier with integrated Clinical Decision Support alerts.
-   - Interactive SVG and 3D relational knowledge graph explorer.
-   - 9-stage Interoperability Lab and Multidimensional Conformance Quality Ledger.
-
-2. **Streamlit Clinical Workbench (`streamlit_app.py`)**:
-   - Ready for instant deployment on Streamlit Community Cloud.
-   - Zero JavaScript toolchain required, pure Python clinical analysis.
-   - Patient dossier inspection with live CDS alerts and laboratory trajectories.
-   - Direct interactive bundle upload and validation reporting.
+### How I Built HealthGraph to Solve This
+I built **HealthGraph** as a deterministic medical translator and safety engine:
+1. **The Language:** It speaks **HL7® FHIR® R4** (Fast Healthcare Interoperability Resources) — the official global digital standard for medical data.
+2. **The Graph:** Instead of treating your medical history as isolated flat files or messy PDFs, HealthGraph ingests records as an interconnected **knowledge graph**. It connects Patients ➔ Encounters ➔ Laboratory Observations ➔ Diagnoses ➔ Active Medications.
+3. **The Brain (100% Deterministic Python):** When a doctor looks at a patient or prescribes a drug, HealthGraph runs hardcoded clinical safety rules (contraindications, dosage caps, kidney function thresholds, and genetic drug-gene interactions). It **never guesses or hallucinates** using generative AI. If a drug is unsafe, it points to the exact lab value and clinical guideline explaining why.
+4. **The Interface:** A dual-surface experience featuring a cinematic React 19 web application with interactive 3D relational visualizers, plus a pure Python Streamlit clinical workbench.
 
 ---
 
-## 3. Core Architecture and Features
+## 💼 The Real Business Reason Why This Exists
 
-### ONC § 170.315(g)(10) FHIR Bulk Data Access ($export)
-Located in `healthgraph/core/bulk_data.py`, this engine implements the SMART / HL7 FHIR Bulk Data Access IG v2.0.0 for population-scale health analytics and data lake synchronization:
-- **Asynchronous Execution Pattern**: Implements standard HTTP 202 Accepted kickoff with `Content-Location` polling header pointing to `/fhir/bulk-status/{job_id}`.
-- **Resource & Temporal Filtering**: Supports `_type` resource selection (`Patient,Observation,Condition,MedicationRequest`) and `_since` ISO-8601 temporal delta filtering.
-- **Line-Delimited JSON Streaming**: Generates `application/fhir+ndjson` manifests and individual resource type data files with byte-level counts.
+Medical fragmentation isn't just an engineering inconvenience — it is a catastrophic economic and human crisis:
 
-### HL7 Gravity Project Social Determinants of Health (SDOH)
-Located in `healthgraph/core/sdoh.py`, aligns clinical records with social vulnerability and health equity standards:
-- **Standard Screening Instruments**: Hunger Vital Sign (LOINC `88121-9`), Transportation Security (LOINC `93030-5`), and Social Isolation (LOINC `63503-7`).
-- **ICD-10-CM Z-Code Mappings**: Automatically translates positive screenings into official billing and diagnostic Z-codes (`Z59.41` Food Insecurity, `Z59.82` Transportation Insecurity, `Z60.0` Social Isolation).
-- **Closed-Loop Community Referrals**: Tracks community-based organization (CBO) partner service coordination (e.g. Medically Tailored Meals, NEMT mobility vouchers).
-
-### CPIC Pharmacogenomics (PGx) Precision Dosing
-Located in `healthgraph/core/pharmacogenomics.py`, evaluates patient genetic variants against CPIC Level A clinical guidelines:
-- **Metabolizer Phenotypes**: Translates CYP2C19 (Clopidogrel resistance) and CYP2D6 (Codeine/Tramadol toxicity) diplotypes into actionable risk tiers.
-- **Point-of-Care Pre-Order Verification**: Intercepts active pharmacotherapy prescriptions before fulfillment with guided alternative drug recommendations.
-
-### SMART on FHIR v2.0 OAuth 2.0 PKCE Architecture
-Located in `healthgraph/core/smart.py`:
-- **Discovery**: Public `/.well-known/smart-configuration` endpoint detailing token URLs, supported scopes (`patient/*.read`, `launch/patient`), and PKCE `S256` capabilities.
-- **PKCE Authentication**: Implements SHA-256 code challenge generation and verification, protecting against authorization code interception attacks.
-
-### Clinical Decision Support (CDS) Rules Engine
-Located in `healthgraph/core/cds.py`, the CDS engine evaluates deterministic clinical rules against aggregated patient graphs:
-- **Metformin Renal Safety Rule**: Evaluates eGFR levels against active Metformin therapy. Triggers critical contraindication warnings if eGFR drops below 30 mL/min/1.73m2 and dosage alerts when eGFR is between 30 and 45.
-- **Glycemic Target Assessment**: Compares the most recent HbA1c measurement against standard clinical targets of 7.0 percent for adults with diabetes.
-- **Referential Integrity Guards**: Flags broken practitioner or encounter references in active prescriptions.
-- **Nephropathy Surveillance**: Checks for annual microalbuminuria screening intervals in diabetic cohorts.
-
-### Global Clinician Command Palette
-Available anywhere in the React web workspace via `Ctrl+K` or `Cmd+K`:
-- Instant fuzzy navigation across all synthetic patients.
-- Quick switching between clinical tools (Graph Inspector, Interoperability Lab, Quality Ledger, Terminology Crosswalk).
-- Direct lookups for clinical terminology codes (such as LOINC `4548-4` for HbA1c or SNOMED `44054006` for Type 2 Diabetes).
-- One-click trigger for synthetic bundle uploading.
-
-### Interactive Capability Showcase Dock
-Embedded directly into Chapter 5 of the home narrative:
-- Interactive tabbed dock previewing all major clinical analysis workspaces.
-- Real-time clinical metrics displaying patient counts, resolved edges, and conformance dimensions.
-- Direct one-click launching into specialized workspaces.
-
-### 3-Layer Profile-Aware Validation Engine
-- **Layer 1 (Structural)**: JSON schema correctness, required data types, and root attributes.
-- **Layer 2 (Resource-Specific)**: Enforces rules tailored per resource type without false universal assumptions.
-- **Layer 3 (Interoperability)**: Validates canonical terminology URIs, temporal consistency, and required clinical context.
-
-### Multidimensional Data Quality Ledger
-Evaluates bundles across six independent dimensions rather than relying on a misleading single score:
-- **Referential Integrity**: Measures resolved internal pointers versus dangling ghost references.
-- **Structural Validity**: Rate of schema-compliant resources.
-- **Temporal Consistency**: Checks chronological alignment between observations and parent encounters.
-- **Completeness**: Presence of core clinical attributes.
-- **Terminology Standards**: Adherence to standard LOINC, SNOMED CT, RxNorm, and ICD-10 systems.
-- **Identity Uniqueness**: Absence of conflicting resource identifiers.
-
-### Synthetic Patient Cohorts
-- **Eleanor Vance (`PAT-VANCE-01`)**: Longitudinal management of Type 2 Diabetes, Stage 3a Diabetic Nephropathy, and Hypertension across five clinical encounters over three years.
-- **Marcus Thorne (`PAT-THORNE-02`)**: Acute coronary syndrome presentation, emergency triple CABG surgery, and serial Troponin I recovery monitoring.
-- **Sofia Chen (`PAT-CHEN-03`)**: Pediatric asthma surveillance, spirometry testing, and inhaler prescription management.
-- **David Ross (`PAT-ROSS-04`)**: Colorectal oncology post-resection follow-up with CEA biomarker surveillance.
-- **Anomaly Cohort (`PAT-ANOMALY-05`)**: Curated real-world data imperfections for student and clinician training, including dangling references, temporal inversions, and missing mandatory attributes.
+1. **Adverse Drug Events (ADEs) Cost $30B+ Annually:** In the United States alone, preventable medication errors and uncoordinated prescribing cause hundreds of thousands of avoidable hospitalizations each year.
+2. **Federal Regulatory Mandates (ONC Cures Act § 170.315):** The 21st Century Cures Act legally mandates that hospitals and health systems provide patients and third-party apps with secure, standardized API access (SMART on FHIR and Bulk Data Export) or face severe "information blocking" civil penalties.
+3. **Health Equity & Value-Based Care Reimbursement:** Insurance payers (CMS, Medicare, Medicaid) increasingly tie hospital reimbursements to **Social Determinants of Health (SDOH)**. If a clinic discharges a diabetic patient without knowing they are food-insecure or lack transportation to pick up insulin, the patient will inevitably be readmitted — and the hospital absorbs the financial penalty. HealthGraph incorporates the **HL7 Gravity Project** to screen, code (ICD-10 Z-codes), and trigger closed-loop community referrals.
+4. **Precision Medicine Efficiency:** Prescribing blood thinners like Clopidogrel without checking if the patient has a loss-of-function `CYP2C19` genetic variant leads to preventable strokes. HealthGraph embeds CPIC guidelines directly into the point of care.
 
 ---
 
-## 4. Deployment Guide
+## 🌟 What's New: The Groundbreaking Expansion
 
-### Option A: Streamlit Community Cloud (Fastest Free Hosting)
-1. Fork or push this repository to your GitHub account.
-2. Visit [share.streamlit.io](https://share.streamlit.io) and click **New app**.
-3. Select your repository, choose the `main` branch, and set `streamlit_app.py` as the main file path.
-4. Click **Deploy**. Streamlit Cloud will automatically install dependencies from `requirements.txt` and launch the application.
+We've supercharged HealthGraph with six major clinical interoperability engines:
 
-### Option B: Vercel (Frontend Single Page Application)
-1. Push this repository to GitHub.
-2. Import the project into [Vercel](https://vercel.com).
-3. The root `vercel.json` automatically configures the build settings:
-   - Root directory: `.`
-   - Build command: `cd frontend && npm install && npm run build`
-   - Output directory: `frontend/dist`
-4. Deploy. The modern React application will be live globally on Vercel edge network.
+| Feature Engine | Standards / Code Systems | What It Solves |
+| :--- | :--- | :--- |
+| **ONC Bulk Data Access (`$export`)** | ONC § 170.315(g)(10), SMART Bulk IG v2.0 | Asynchronous HTTP 202 job kicks that export millions of patient records into streaming line-delimited NDJSON files for population health analytics. |
+| **HL7 Gravity Project SDOH Engine** | LOINC (`88121-9`, `93030-5`), ICD-10-CM (`Z59.41`, `Z59.82`) | Screens for food insecurity and transportation barriers, automatically generates diagnostic Z-codes, and tracks closed-loop community organization referrals. |
+| **SMART-on-FHIR v2 App Launch** | OAuth 2.0 + PKCE S256, HL7 SMART IG | Allows clinicians to launch HealthGraph directly inside major EHRs (Epic, Cerner) with zero-trust token exchange and scoped patient authorization. |
+| **Pharmacogenomics (PGx) Precision Dosing** | CPIC Levels A/B, PharmGKB, Star Alleles | Analyzes patient genetic variants (`CYP2D6`, `CYP2C19`, `SLCO1B1`) to warn of toxic drug metabolism or therapeutic failure before dispensing. |
+| **FHIR R4 Subscriptions & REST Hooks** | FHIR Subscriptions R4 Topic-Based | Real-time webhook alerting that pushes notifications to hospital servers the second critical lab thresholds (e.g. Troponin > 0.04 ng/mL) are breached. |
+| **Dual Presentation Surfaces** | React 19 + GSAP + Three.js & Streamlit | A kinetic web app with interactive graph topology and clinical dossiers, paired with a lightweight zero-JS Python workbench. |
 
-### Option C: Render, Railway, or Google Cloud Run (Containerized Backend)
-A production-ready `Dockerfile` and `render.yaml` blueprint are included in the repository root:
-1. Connect your repository to [Render](https://render.com) or [Railway](https://railway.app).
-2. For Render, select **Blueprint** to read `render.yaml` automatically, or choose **Web Service** with the Docker runtime.
-3. The multi-stage Docker build installs Python dependencies and serves the complete ASGI application with pre-compiled frontend assets on port 8000.
+---
 
-### Option D: Local Development Setup
+## 🏗️ Technical Architecture
 
-#### Prerequisites
-- Python 3.10 or higher
-- Node.js 18 or higher (only required if modifying the frontend source code)
+```text
+                               ┌──────────────────────────────────────────────┐
+                               │       EHR / Health Data Ecosystem            │
+                               │   (Epic, Cerner, Public Health, LabCorp)     │
+                               └──────────────────────┬───────────────────────┘
+                                                      │  SMART v2 OAuth / REST
+                                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                HEALTHGRAPH ENGINE (Python 3.10+)                            │
+│                                                                                             │
+│  ┌───────────────────────┐   ┌───────────────────────┐   ┌───────────────────────────────┐  │
+│  │   FHIR R4 Ingestion   │   │ Relational Knowledge  │   │  Deterministic Decision Rules │  │
+│  │   & Schema Validator  │──▶│     Graph Engine      │──▶│  - Renal / eGFR Safety Checks │  │
+│  │  (Patient, Obs, Rx)   │   │  (Graph Inversion)    │   │  - CPIC PGx Drug-Gene Dosing  │  │
+│  └───────────────────────┘   └───────────────────────┘   │  - Gravity Project SDOH (Z)   │  │
+│                                                          └───────────────┬───────────────┘  │
+│                                                                          │                  │
+│  ┌───────────────────────┐   ┌───────────────────────┐                   │                  │
+│  │  ONC Bulk Data Export │   │  R4 Subscription Hub  │                   │                  │
+│  │  ($export / NDJSON)   │   │  (Event REST Hooks)   │                   │                  │
+│  └───────────────────────┘   └───────────────────────┘                   │                  │
+└──────────────────────────────────────────────┬───────────────────────────┴──────────────────┘
+                                               │
+                                               ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                   PRESENTATION SURFACES                                     │
+│                                                                                             │
+│  ┌──────────────────────────────────────────────────┐  ┌─────────────────────────────────┐  │
+│  │ React 19 / Vite / Tailwind Web App               │  │ Streamlit Clinical Workbench    │  │
+│  │ - Kinetic Narrative & 3D Knowledge Graph         │  │ - Zero-JS pure Python analysis  │  │
+│  │ - Integrated Patient Dossier & PGx/SDOH Badges   │  │ - Instant local execution       │  │
+│  │ - Interop Lab with Bulk Data Export Console      │  │ - Interactive bundle uploader   │  │
+│  └──────────────────────────────────────────────────┘  └─────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
+```
 
-#### Backend Quickstart
+---
+
+## 🚀 Quick Start
+
+### 1. Run the Python Backend & Streamlit Workbench
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/healthgraph.git
+git clone https://github.com/sanvidvaidya/healthgraph.git
 cd healthgraph
+
+# Create and activate virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scriptsctivate
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Start the Starlette ASGI server
-python app.py
-```
-Open your browser to `http://127.0.0.1:8000` to interact with the full web application.
+# Run the complete test suite (66 tests)
+pytest
 
-#### Frontend Development (Optional)
-If you wish to edit React components or modify styles:
+# Launch the Streamlit Clinical Workbench
+streamlit run streamlit_app.py
+```
+
+### 2. Run the React 19 Web App
 ```bash
 cd frontend
 npm install
 npm run dev
-```
-The Vite development server runs on `http://127.0.0.1:5173` with instant hot module replacement and proxies API requests to the Python backend on port 8000.
-
----
-
-
-### Real-Time FHIR R4 Subscriptions & REST Hooks
-HealthGraph implements the HL7 FHIR R4 Subscription standard for real-time, event-driven clinical surveillance:
-- **Subscription Lifecycle**: Manage subscriptions (`requested`, `active`, `off`) with criteria queries (e.g. `Observation?code=33914-3,48642-3` or `MedicationRequest?status=active`).
-- **Deterministic CDS Triggers**: Real-time evaluation of point-of-care safety gates (e.g. acute renal eGFR drops triggering critical Metformin contraindications, glycemic target elevations, or unauthenticated prescriber references).
-- **Signed REST Hooks**: Dispatches event notifications signed with HMAC SHA-256 (`X-HealthGraph-Signature`).
-- **Simulation & Audit Trail**: Point-of-care event simulator (`/api/subscriptions/simulate`) and persistent event audit ledger (`/api/subscriptions/audit-log`). See [`docs/FHIR_SUBSCRIPTIONS.md`](docs/FHIR_SUBSCRIPTIONS.md) for architecture details.
-
----
-
-## 5. Automated Verification and Tests
-
-HealthGraph includes a comprehensive automated test suite covering schema validation, reference graph reconstruction, clinical decision support rules, quality audits, and REST API endpoints.
-
-Run all tests from the repository root:
-```bash
-PYTHONPATH=. pytest -v
-```
-
-Expected output:
-```text
-60 passed in 0.48s
+# Web application will be live at http://localhost:5173
 ```
 
 ---
 
-## 5. Pharmacogenomic (PGx) Variant Interpretation & CPIC Precision Dosing
+## 🧪 Comprehensive Verification & Quality Assurance
 
-HealthGraph deterministically correlates patient genomic variant profiles with medication orders based on **CPIC Level A/B Guidelines** and **FDA Table of Pharmacogenomic Biomarkers**:
-- **CYP2C19 & Clopidogrel:** Detects Poor Metabolizers at high risk of acute stent thrombosis; recommends Ticagrelor or Prasugrel.
-- **CYP2D6 & Codeine:** Alerts on Ultrarapid Metabolizers at risk of fatal opioid overdose and Poor Metabolizers with analgesic failure.
-- **SLCO1B1 & Statins:** Identifies defective hepatic transporter alleles causing statin-induced myopathy and rhabdomyolysis.
-- **HLA-B*57:01 & Abacavir:** Enforces absolute contraindications to prevent fatal systemic hypersensitivity reactions.
-- **Point-of-Care CDS Pre-Order Check:** Simulates EHR `order-select` hooks via `/api/pgx/pre-order-check` to intercept contraindicated orders before clinician signature.
-
-See [`docs/PHARMACOGENOMICS_PRECISION_DOSING.md`](docs/PHARMACOGENOMICS_PRECISION_DOSING.md) for endpoint documentation and clinical citations.
-
----
-
-## 6. Project Boundaries and Scope
-
-HealthGraph is designed as an educational clinical information system explorer and reference implementation:
-- It is **not** an electronic medical record system for live patient charting or billing.
-- It is **not** an automated diagnostic engine; all clinical decision support rules are deterministic educational demonstrations based on published clinical guidelines.
-- It operates exclusively on synthetic patient data and does not store protected health information.
+HealthGraph is thoroughly tested with **66 passing unit and integration tests** verifying:
+- ✅ FHIR R4 schema parsing, resource validation, and referential integrity.
+- ✅ Renal function and medication contraindication clinical safety logic.
+- ✅ SMART on FHIR OAuth token exchange with PKCE verification.
+- ✅ Asynchronous Bulk Data `$export` status polling and NDJSON stream generation.
+- ✅ HL7 Gravity Project SDOH questionnaire scoring, Z-code generation, and referral states.
+- ✅ Pharmacogenomic CPIC dosing interpretation and contraindication alerts.
 
 ---
 
-## 7. License
+## 📜 Regulatory Disclaimer
 
-Distributed under the MIT License. See `LICENSE` for details.
+*HealthGraph is an educational and analytical research demonstration platform. It operates deterministically on synthetic, de-identified clinical test bundles. It is not an ONC-certified EHR technology, medical device, or medical diagnostic tool. Clinical decisions must always be made by licensed healthcare professionals.*
