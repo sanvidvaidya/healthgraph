@@ -40,7 +40,7 @@ Here are the main capabilities in this release:
 
 - **Bulk Data Export (`$export`):** Implements the FHIR Bulk Data specification to export patient cohorts into line-delimited NDJSON files for analytics and reporting.
 - **Social Determinants of Health (Gravity Project):** Structured screening assessments for food insecurity and transportation needs, mapping answers directly to LOINC codes, ICD-10 Z-codes, and referral tasks.
-- **SMART on FHIR v2 App Launch:** Allows doctors to launch HealthGraph directly from inside hospital EHR systems like Epic or Cerner using OAuth 2.0 with PKCE authorization.
+- **SMART on FHIR v2 App Launch:** Implements the SMART on FHIR v2 specification (OAuth 2.0 with PKCE) with an embedded EHR launch simulator, demonstrating how clinical decision support tools integrate into hospital workflows without proprietary EHR lock-in.
 - **Pharmacogenomics (PGx) Precision Dosing:** Evaluates genetic alleles (such as CYP2D6, CYP2C19, and SLCO1B1) against CPIC clinical guidelines to prevent adverse drug reactions.
 - **Real-Time FHIR Subscriptions:** Webhook notifications that alert hospital systems when critical lab results (such as elevated cardiac troponin) are entered.
 - **Dual Working Surfaces:** A React web application with visual relationship graphs and a dedicated Python Streamlit application for clinical review.
